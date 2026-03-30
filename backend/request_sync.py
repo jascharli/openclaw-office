@@ -9,7 +9,7 @@ import uuid
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
 from sqlalchemy.orm import Session
-from database import RequestLog
+from database import RequestLog, to_utc
 
 
 # 模型到服务商的映射表
@@ -247,24 +247,23 @@ def parse_session_file(db: Session, session_path: str, agent_id: str, agent_name
                 # 支持两种格式：数字时间戳（UTC）或 ISO 字符串（UTC）
                 if isinstance(ts, str):
                     if 'T' in ts:  # ISO 格式：2026-03-25T20:21:48.093Z
-                        # 解析为 UTC 时间，然后转换为北京时间
+                        # 解析为 UTC 时间
                         ts = ts.replace('Z', '+00:00')
-                        utc_dt = datetime.fromisoformat(ts)
-                        # 转换为北京时间（UTC+8）
-                        created_at = utc_dt + timedelta(hours=8)
-                        created_at = created_at.replace(tzinfo=None)
+                        created_at = datetime.fromisoformat(ts)
                     else:  # 数字字符串
                         ts_float = float(ts) / 1000
-                        # 从 UTC 时间戳创建 datetime，然后 +8 小时
-                        created_at = datetime.utcfromtimestamp(ts_float) + timedelta(hours=8)
+                        # 从 UTC 时间戳创建 datetime
+                        created_at = datetime.utcfromtimestamp(ts_float)
                 else:  # 数字时间戳（UTC）
                     ts_float = ts / 1000
-                    # 从 UTC 时间戳创建 datetime，然后 +8 小时
-                    created_at = datetime.utcfromtimestamp(ts_float) + timedelta(hours=8)
+                    # 从 UTC 时间戳创建 datetime
+                    created_at = datetime.utcfromtimestamp(ts_float)
             except Exception as e:
                 print(f"⚠️ 时间解析失败：{ts} - {e}")
-                created_at = datetime.now()
+                created_at = datetime.utcnow()
             
+            # 确保存储为 UTC 时间（不带时区）
+            created_at_utc = to_utc(created_at)
             db.add(RequestLog(
                 request_id=f"req-{uuid.uuid4().hex[:12]}",
                 agent_id=agent_id,
@@ -275,7 +274,7 @@ def parse_session_file(db: Session, session_path: str, agent_id: str, agent_name
                 tokens_total=tokens_total,
                 status='success',
                 message_id=message_id,
-                created_at=created_at
+                created_at=created_at_utc
             ))
             count += 1
         except:
@@ -285,14 +284,12 @@ def parse_session_file(db: Session, session_path: str, agent_id: str, agent_name
 
 def get_hourly_stats(db: Session, agent_id: Optional[str], date: str) -> Dict:
     """
-    获取每小时统计（数据库已存储北京时间）
+    获取每小时统计（数据库存储 UTC 时间）
     返回分服务商的数据，用于分组柱状图
     """
     from sqlalchemy import func, text
-    # 数据库存储的已经是北京时间，不需要转换
-    # 但 date 参数是 UTC 日期，需要转换为北京时间日期
-    beijing_date = (datetime.strptime(date, '%Y-%m-%d') + timedelta(hours=8)).strftime('%Y-%m-%d')
-    start = datetime.strptime(beijing_date, '%Y-%m-%d')
+    # 数据库存储的是 UTC 时间，需要根据配置的时区进行查询
+    start = datetime.strptime(date, '%Y-%m-%d')
     end = start + timedelta(days=1)
     
     # 查询：每个小时 × 每个服务商 的请求数

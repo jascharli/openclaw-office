@@ -13,11 +13,8 @@ import json
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
-from database import AgentStatus, TaskRecord, ReminderLog, get_db
+from database import AgentStatus, TaskRecord, ReminderLog, get_db, to_local_time, to_utc, UTC, get_current_utc
 from config import config
-
-# 北京时区（UTC+8）
-BEIJING_TZ = timezone(timedelta(hours=8))
 from feishu_notify import send_reminder_notification
 from websocket import broadcast_reminder
 from request_sync import sync_request_logs
@@ -85,7 +82,10 @@ class ReminderScheduler:
     async def check_rules(self, db: Session):
         """检查所有规则"""
         agents = db.query(AgentStatus).all()
-        now = datetime.now(BEIJING_TZ)
+        # 使用 UTC 时间进行计算
+        now_utc = datetime.now(UTC)
+        # 转换为本地时区用于展示
+        now_local = now_utc
         
         for agent in agents:
             # 只检查工作中的 Agent
@@ -94,11 +94,11 @@ class ReminderScheduler:
             
             # 规则 1: 任务超时督促
             if self.rules["task_overtime"]["enabled"]:
-                await self.check_task_overtime(db, agent, now)
+                await self.check_task_overtime(db, agent, now_utc)
             
             # 规则 2: 长时间无更新督促
             if self.rules["no_update"]["enabled"]:
-                await self.check_no_update(db, agent, now)
+                await self.check_no_update(db, agent, now_utc)
             
             # 规则 3: Token 超预算督促
             if self.rules["token_budget"]["enabled"]:
@@ -106,7 +106,7 @@ class ReminderScheduler:
             
             # 规则 4: 进度停滞督促
             if self.rules["progress_stuck"]["enabled"]:
-                await self.check_progress_stuck(db, agent, now)
+                await self.check_progress_stuck(db, agent, now_utc)
     
     async def check_task_overtime(self, db: Session, agent: AgentStatus, now: datetime):
         """检查任务超时"""
@@ -131,10 +131,18 @@ class ReminderScheduler:
         
         threshold = timedelta(minutes=self.rules["no_update"]["threshold_minutes"])
         
-        if now - agent.last_activity > threshold:
+        # 确保 last_activity 是带时区的 UTC 时间
+        if agent.last_activity.tzinfo is None:
+            last_activity_utc = agent.last_activity.replace(tzinfo=UTC)
+        else:
+            last_activity_utc = agent.last_activity
+        
+        if now - last_activity_utc > threshold:
+            # 计算分钟数
+            minutes = int((now - last_activity_utc).total_seconds() / 60)
             await self.send_auto_reminder(
                 db, agent,
-                reason=f"长时间无状态更新（{int((now - agent.last_activity).total_seconds() / 60)}分钟）"
+                reason=f"长时间无状态更新（{minutes}分钟）"
             )
     
     async def check_token_budget(self, db: Session, agent: AgentStatus):
@@ -158,7 +166,12 @@ class ReminderScheduler:
         # 如果最近有督促，且间隔不到阈值时间，跳过
         if last_reminder:
             threshold = timedelta(minutes=self.rules["progress_stuck"]["threshold_minutes"])
-            if now - last_reminder.created_at < threshold:
+            # 确保 created_at 是带时区的 UTC 时间
+            if last_reminder.created_at.tzinfo is None:
+                created_at_utc = last_reminder.created_at.replace(tzinfo=UTC)
+            else:
+                created_at_utc = last_reminder.created_at
+            if now - created_at_utc < threshold:
                 return
         
         # TODO: 需要记录进度历史才能检测停滞

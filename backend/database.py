@@ -6,8 +6,22 @@ SQLite 数据库 Schema 和 ORM 模型
 from sqlalchemy import create_engine, Column, Integer, String, Text, Float, DateTime, ForeignKey, Index
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
-from datetime import datetime
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 import os
+
+# 从配置导入时区设置
+try:
+    from config import config
+    # 使用 Config 对象的 get 方法获取配置
+    tz_name = config.get("database.timezone", "Asia/Shanghai")
+    CONFIG_TZ = ZoneInfo(tz_name)
+except ImportError:
+    # 如果配置未加载，默认使用北京时间
+    CONFIG_TZ = ZoneInfo("Asia/Shanghai")
+
+# UTC 时区
+UTC = timezone.utc
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATABASE_URL = f"sqlite:///{os.path.join(BASE_DIR, 'openclaw_office.db')}"
@@ -219,6 +233,33 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+def to_utc(dt):
+    """将带时区的 datetime 转换为 UTC 时间（不带时区）"""
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        # 假设是本地时间，转换为 UTC
+        return dt.replace(tzinfo=CONFIG_TZ).astimezone(UTC).replace(tzinfo=None)
+    # 已经带时区，直接转换为 UTC
+    return dt.astimezone(UTC).replace(tzinfo=None)
+
+
+def to_local_time(utc_dt):
+    """将 UTC 时间（不带时区）转换为本地时区"""
+    if utc_dt is None:
+        return None
+    if utc_dt.tzinfo is None:
+        # 假设是 UTC 时间，转换为本地时区
+        return utc_dt.replace(tzinfo=UTC).astimezone(CONFIG_TZ)
+    # 已经带时区，直接转换
+    return utc_dt.astimezone(CONFIG_TZ)
+
+
+def get_current_utc():
+    """获取当前 UTC 时间（不带时区）"""
+    return datetime.now(UTC).replace(tzinfo=None)
 
 
 # 测试用示例数据

@@ -1,32 +1,32 @@
 version: '3.8'
 
 services:
-  lobster-office:
+  openclaw-office:
     build: .
-    container_name: lobster-office
+    container_name: openclaw-office
     ports:
       # 格式：宿主机端口：容器端口
       # 可自定义，避免端口冲突
-      - "${LOBSTER_FRONTEND_PORT:-5173}:5173"  # 前端
-      - "${LOBSTER_BACKEND_PORT:-8000}:8000"  # 后端
+      - "${OPENCLAW_FRONTEND_PORT:-5173}:5173"  # 前端
+      - "${OPENCLAW_BACKEND_PORT:-8000}:8000"  # 后端
     environment:
       # 环境变量配置
-      - LOBSTER_BACKEND_PORT=8000
-      - LOBSTER_FRONTEND_PORT=5173
-      - LOBSTER_HOST=0.0.0.0
+      - OPENCLAW_BACKEND_PORT=8000
+      - OPENCLAW_FRONTEND_PORT=5173
+      - OPENCLAW_HOST=0.0.0.0
       # Token 预算配置
-      - LOBSTER_TOKEN_BUDGET_DAILY=500000
-      - LOBSTER_TOKEN_BUDGET_MONTHLY=10000000
+      - OPENCLAW_TOKEN_BUDGET_DAILY=500000
+      - OPENCLAW_TOKEN_BUDGET_MONTHLY=10000000
       # 飞书配置（可选）
       - FEISHU_WEBHOOK_URL=${FEISHU_WEBHOOK_URL:-}
     volumes:
       # 持久化数据
       - ./backend/config.json:/app/backend/config.json
-      - ./backend/lobster_office.db:/app/backend/lobster_office.db
+      - ./backend/openclaw_office.db:/app/backend/openclaw_office.db
       - ./backend/logs:/app/backend/logs
     restart: unless-stopped
     networks:
-      - lobster-network
+      - openclaw-network
 
   # 可选：Nginx 反向代理（生产环境）
   # nginx:
@@ -43,5 +43,5 @@ services:
   #   restart: unless-stopped
 
 networks:
-  lobster-network:
+  openclaw-network:
     driver: bridge

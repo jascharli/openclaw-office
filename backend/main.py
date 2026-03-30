@@ -11,11 +11,8 @@ from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 import json
 
-from database import init_db, get_db, AgentStatus, TaskRecord, TokenLog, ReminderLog, TaskHandover, CollaborationGroup, RequestLog
+from database import init_db, get_db, AgentStatus, TaskRecord, TokenLog, ReminderLog, TaskHandover, CollaborationGroup, RequestLog, to_local_time, to_utc, UTC, get_current_utc
 from config import config, CONFIG_FILE
-
-# 北京时区（UTC+8）
-BEIJING_TZ = timezone(timedelta(hours=8))
 from handover_sync import create_handover_context, get_agent_sessions
 from request_sync import sync_request_logs, get_hourly_stats, get_daily_stats, get_agent_comparison, identify_agent_from_session
 from websocket import websocket_endpoint, manager, broadcast_agent_update, broadcast_reminder
@@ -48,14 +45,14 @@ def root():
         "service": "OpenClaw 办公室 API",
         "version": "1.0.0",
         "status": "running",
-        "timestamp": datetime.now(BEIJING_TZ).isoformat()
+        "timestamp": to_local_time(datetime.now(UTC)).isoformat()
     }
 
 
 @app.get("/health")
 def health_check():
     """健康检查端点"""
-    return {"status": "healthy", "timestamp": datetime.now(BEIJING_TZ).isoformat()}
+    return {"status": "healthy", "timestamp": to_local_time(datetime.now(UTC)).isoformat()}
 
 
 @app.websocket("/ws")
@@ -358,7 +355,7 @@ def get_agent_status(agent_id: str, db: Session = Depends(get_db)):
         "estimated_remaining": agent.estimated_remaining,
         "token_used": agent.token_used,
         # 转换为北京时间
-        "last_activity": agent.last_activity.astimezone(BEIJING_TZ).isoformat() if agent.last_activity else None
+        "last_activity": to_local_time(agent.last_activity).isoformat() if agent.last_activity else None
     }
 
 @app.get("/api/v1/tasks")
@@ -574,7 +571,7 @@ def send_reminder(
     return {
         "success": True,
         "reminder_id": reminder.id,
-        "sent_at": datetime.now(BEIJING_TZ).isoformat(),
+        "sent_at": to_local_time(datetime.now(UTC)).isoformat(),
         "feishu_result": feishu_result
     }
 
@@ -600,7 +597,7 @@ def get_reminder_history(
                 "reminder_type": r.reminder_type,
                 "reminder_interval": r.reminder_interval,
                 "response_status": r.response_status,
-                "created_at": r.created_at.astimezone(BEIJING_TZ).isoformat()
+                "created_at": to_local_time(r.created_at).isoformat()
             }
             for r in reminders
         ]
@@ -693,7 +690,7 @@ def create_handover(
             "from_agent_id": handover.from_agent_id,
             "to_agent_id": handover.to_agent_id,
             "status": handover.status,
-            "created_at": handover.created_at.astimezone(BEIJING_TZ).isoformat()
+            "created_at": to_local_time(handover.created_at).isoformat()
         }
     }
 
@@ -736,10 +733,10 @@ def get_handovers(
                 "context_data": json.loads(h.context_data) if h.context_data else {},
                 "notes": h.notes,
                 "status": h.status,
-                "accepted_at": h.accepted_at.astimezone(BEIJING_TZ).isoformat() if h.accepted_at else None,
-                "completed_at": h.completed_at.astimezone(BEIJING_TZ).isoformat() if h.completed_at else None,
+                "accepted_at": to_local_time(h.accepted_at).isoformat() if h.accepted_at else None,
+                "completed_at": to_local_time(h.completed_at).isoformat() if h.completed_at else None,
                 "created_at": h.created_at.astimezone(BEIJING_TZ).isoformat(),
-                "updated_at": h.updated_at.astimezone(BEIJING_TZ).isoformat()
+                "updated_at": to_local_time(h.updated_at).isoformat()
             }
             for h in handovers
         ],
@@ -774,7 +771,7 @@ def get_handover(handover_id: str, db: Session = Depends(get_db)):
             "status": handover.status,
             "accepted_at": handover.accepted_at.astimezone(BEIJING_TZ).isoformat() if handover.accepted_at else None,
             "completed_at": handover.completed_at.astimezone(BEIJING_TZ).isoformat() if handover.completed_at else None,
-            "created_at": handover.created_at.astimezone(BEIJING_TZ).isoformat() if handover.created_at else None,
+            "created_at": to_local_time(handover.created_at).isoformat() if handover.created_at else None,
             "updated_at": handover.updated_at.astimezone(BEIJING_TZ).isoformat() if handover.updated_at else None
         }
     }

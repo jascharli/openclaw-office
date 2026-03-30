@@ -1,12 +1,10 @@
-# 龙虾办公室 - Docker 镜像
+# OpenClaw 办公室 - Docker 镜像
 FROM python:3.11-slim
 
 WORKDIR /app
 
 # 安装系统依赖
-RUN apt-get update && apt-get install -y \
-    netcat-openbsd \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y netcat-openbsd && rm -rf /var/lib/apt/lists/*
 
 # 复制项目文件
 COPY backend/ ./backend/
@@ -27,13 +25,12 @@ RUN mkdir -p /app/backend/data
 EXPOSE 8000 5173
 
 # 环境变量
-ENV LOBSTER_BACKEND_PORT=8000
-ENV LOBSTER_FRONTEND_PORT=5173
-ENV LOBSTER_HOST=0.0.0.0
+ENV OPENCLAW_BACKEND_PORT=8000
+ENV OPENCLAW_FRONTEND_PORT=5173
+ENV OPENCLAW_HOST=0.0.0.0
 
 # 健康检查
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:${LOBSTER_BACKEND_PORT}/health || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 CMD curl -f http://localhost:${OPENCLAW_BACKEND_PORT}/health || exit 1
 
 # 启动服务
 CMD ["./start.sh"]
