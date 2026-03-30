@@ -47,7 +47,7 @@ docker-compose up -d
 cp config.example.json config.json
 ```
 
-2. 编辑 `config.json`，填入你的 OpenClaw API 密钥
+2. 编辑 `config.json`，根据需要调整配置
 
 3. 重启应用
 

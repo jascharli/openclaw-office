@@ -150,19 +150,28 @@ cp config.example.json config.json
 
 ```json
 {
-  "openclaw": {
-    "base_url": "https://api.openclaw.com",
-    "api_key": "your-api-key-here"
+  "app": {
+    "name": "龙虾办公室",
+    "version": "1.0.0",
+    "description": "AI 团队工作空间 - 上帝视角的实时监控"
+  },
+  "server": {
+    "host": "0.0.0.0",
+    "port": 8000,
+    "frontend_port": 5173
+  },
+  "agents": {
+    "scan_mode": "auto",
+    "scan_base_dir": "~/.openclaw/agents",
+    "custom_agents": []
   },
   "token_budget": {
     "daily": 500000,
     "monthly": 10000000
   },
-  "sync": {
-    "interval": 60
-  },
-  "reminder": {
-    "enabled": true
+  "data_sync": {
+    "request_sync_interval_minutes": 5,
+    "agent_sync_interval_minutes": 2
   }
 }
 ```

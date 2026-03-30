@@ -365,23 +365,48 @@ window.LOBSTER_CONFIG = {
 
 ```json
 {
-  "openclaw": {
-    "base_url": "https://api.openclaw.com",
-    "api_key": "your-api-key-here"
+  "app": {
+    "name": "龙虾办公室",
+    "version": "1.0.0",
+    "description": "AI 团队工作空间 - 上帝视角的实时监控"
+  },
+  "server": {
+    "host": "0.0.0.0",
+    "port": 8000,
+    "frontend_port": 5173
+  },
+  "database": {
+    "path": "./lobster_office.db",
+    "timezone": "Asia/Shanghai"
+  },
+  "agents": {
+    "scan_mode": "auto",
+    "scan_base_dir": "~/.openclaw/agents",
+    "custom_agents": []
   },
   "token_budget": {
     "daily": 500000,
     "monthly": 10000000
   },
-  "sync": {
-    "interval": 60
+  "data_sync": {
+    "request_sync_interval_minutes": 5,
+    "agent_sync_interval_minutes": 2,
+    "session_sync_interval_minutes": 5,
+    "task_sync_interval_minutes": 10,
+    "request_lookback_hours": 6,
+    "agent_lookback_hours": 1,
+    "session_lookback_hours": 24
   },
-  "reminder": {
-    "enabled": true,
-    "task_timeout": 3600,
-    "no_update": 1800,
-    "token_threshold": 0.9,
-    "progress_stagnation": 3600
+  "features": {
+    "handover_enabled": true,
+    "reminder_enabled": true,
+    "feishu_enabled": false,
+    "task_extraction_enabled": true
+  },
+  "feishu": {
+    "webhook_url": "",
+    "app_id": "",
+    "app_secret": ""
   }
 }
 ```
@@ -390,16 +415,33 @@ window.LOBSTER_CONFIG = {
 
 | 配置项 | 说明 | 默认值 |
 |--------|------|--------|
-| openclaw.base_url | OpenClaw API 地址 | https://api.openclaw.com |
-| openclaw.api_key | OpenClaw API 密钥 | - |
+| app.name | 应用名称 | 龙虾办公室 |
+| app.version | 应用版本 | 1.0.0 |
+| app.description | 应用描述 | AI 团队工作空间 - 上帝视角的实时监控 |
+| server.host | 服务器主机 | 0.0.0.0 |
+| server.port | 后端端口 | 8000 |
+| server.frontend_port | 前端端口 | 5173 |
+| database.path | 数据库路径 | ./lobster_office.db |
+| database.timezone | 数据库时区 | Asia/Shanghai |
+| agents.scan_mode | Agent 扫描模式 | auto |
+| agents.scan_base_dir | Agent 扫描基础目录 | ~/.openclaw/agents |
+| agents.custom_agents | 自定义 Agent 列表 | [] |
 | token_budget.daily | 每日 Token 预算 | 500000 |
 | token_budget.monthly | 每月 Token 预算 | 10000000 |
-| sync.interval | 数据同步间隔（秒） | 60 |
-| reminder.enabled | 是否启用自动督促 | true |
-| reminder.task_timeout | 任务超时时间（秒） | 3600 |
-| reminder.no_update | 无更新提醒时间（秒） | 1800 |
-| reminder.token_threshold | Token 预算阈值（比例） | 0.9 |
-| reminder.progress_stagnation | 进度停滞时间（秒） | 3600 |
+| data_sync.request_sync_interval_minutes | 请求同步间隔（分钟） | 5 |
+| data_sync.agent_sync_interval_minutes | Agent 同步间隔（分钟） | 2 |
+| data_sync.session_sync_interval_minutes | 会话同步间隔（分钟） | 5 |
+| data_sync.task_sync_interval_minutes | 任务同步间隔（分钟） | 10 |
+| data_sync.request_lookback_hours | 请求回溯小时数 | 6 |
+| data_sync.agent_lookback_hours | Agent 回溯小时数 | 1 |
+| data_sync.session_lookback_hours | 会话回溯小时数 | 24 |
+| features.handover_enabled | 是否启用任务移交 | true |
+| features.reminder_enabled | 是否启用督促功能 | true |
+| features.feishu_enabled | 是否启用飞书集成 | false |
+| features.task_extraction_enabled | 是否启用任务提取 | true |
+| feishu.webhook_url | 飞书 Webhook URL | "" |
+| feishu.app_id | 飞书应用 ID | "" |
+| feishu.app_secret | 飞书应用密钥 | "" |
 
 ### 环境变量
 
@@ -415,7 +457,13 @@ LOBSTER_TOKEN_BUDGET_DAILY=500000
 LOBSTER_TOKEN_BUDGET_MONTHLY=10000000
 
 # 飞书 Webhook（可选）
-FEISHU_WEBHOOK_URL=https://open.feishu.cn/...
+FEISHU_WEBHOOK_URL=your-webhook-url
+
+# 同步间隔（分钟）
+LOBSTER_SYNC_REQUEST_INTERVAL=5
+LOBSTER_SYNC_AGENT_INTERVAL=2
+LOBSTER_SYNC_SESSION_INTERVAL=5
+LOBSTER_SYNC_TASK_INTERVAL=10
 ```
 
 ---
@@ -537,10 +585,10 @@ cp config.json backup/config_$(date +%Y%m%d).json
 ### 问题：数据不同步
 
 **排查步骤**:
-1. 检查 API 密钥配置
-2. 检查网络连接
-3. 查看后端日志
-4. 检查同步间隔配置
+1. 检查网络连接
+2. 查看后端日志
+3. 检查同步间隔配置
+4. 检查 Agent 扫描目录配置
 
 ### 获取帮助
 
