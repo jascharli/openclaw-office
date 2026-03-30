@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  lobster-office:
+    build: .
+    container_name: lobster-office
+    ports:
+      # 格式：宿主机端口：容器端口
+      # 可自定义，避免端口冲突
+      - "${LOBSTER_FRONTEND_PORT:-5173}:5173"  # 前端
+      - "${LOBSTER_BACKEND_PORT:-8000}:8000"  # 后端
+    environment:
+      # 环境变量配置
+      - LOBSTER_BACKEND_PORT=8000
+      - LOBSTER_FRONTEND_PORT=5173
+      - LOBSTER_HOST=0.0.0.0
+      # Token 预算配置
+      - LOBSTER_TOKEN_BUDGET_DAILY=500000
+      - LOBSTER_TOKEN_BUDGET_MONTHLY=10000000
+      # 飞书配置（可选）
+      - FEISHU_WEBHOOK_URL=${FEISHU_WEBHOOK_URL:-}
+    volumes:
+      # 持久化数据
+      - ./backend/config.json:/app/backend/config.json
+      - ./backend/lobster_office.db:/app/backend/lobster_office.db
+      - ./backend/logs:/app/backend/logs
+    restart: unless-stopped
+    networks:
+      - lobster-network
+
+  # 可选：Nginx 反向代理（生产环境）
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: lobster-nginx
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/nginx.conf
+  #     - ./ssl:/etc/nginx/ssl
+  #   depends_on:
+  #     - lobster-office
+  #   restart: unless-stopped
+
+networks:
+  lobster-network:
+    driver: bridge

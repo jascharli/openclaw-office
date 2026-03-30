@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>请求统计 - 龙虾办公室</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container { max-width: 1400px; margin: 0 auto; }
+    header { text-align: center; color: white; margin-bottom: 30px; }
+    header h1 { font-size: 2em; margin-bottom: 10px; }
+    
+    .card {
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    
+    .stat-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+    }
+    .stat-card h3 { font-size: 2em; margin-bottom: 5px; }
+    .stat-card p { opacity: 0.9; }
+    
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .controls select, .controls input, .controls button {
+      padding: 10px 15px;
+      border: 1px solid #e2e8f0;
+      border-radius: 5px;
+      font-size: 14px;
+    }
+    .controls button {
+      background: #667eea;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    .controls button:hover { background: #5568d3; }
+    
+    .chart-container {
+      position: relative;
+      height: 400px;
+      margin-top: 20px;
+    }
+    
+    .agent-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .agent-table th, .agent-table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .agent-table th {
+      background: #f7fafc;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="container">
+      <header>
+        <h1>📊 请求统计</h1>
+        <p>大模型请求次数与 Token 使用统计</p>
+      </header>
+      
+      <!-- 统计卡片 -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <h3>{{ stats.total?.count || 0 }}</h3>
+          <p>今日请求次数</p>
+        </div>
+        <div class="stat-card">
+          <h3>{{ (stats.total?.tokens || 0).toLocaleString() }}</h3>
+          <p>今日 Token 消耗</p>
+        </div>
+        <div class="stat-card">
+          <h3>{{ agents.length }}</h3>
+          <p>活跃 Agent 数</p>
+        </div>
+        <div class="stat-card">
+          <h3>{{ avgTokens }}</h3>
+          <p>平均 Token/请求</p>
+        </div>
+      </div>
+      
+      <!-- 控制栏 -->
+      <div class="card">
+        <div class="controls">
+          <select v-model="selectedPeriod" @change="fetchStats">
+            <option value="daily">今日（按小时）</option>
+            <option value="weekly">本周（按天）</option>
+            <option value="monthly">本月（按天）</option>
+          </select>
+          
+          <select v-model="selectedAgent" @change="fetchStats">
+            <option value="">全部 Agent</option>
+            <option v-for="agent in agents" :key="agent.agent_id" :value="agent.agent_id">
+              {{ agent.agent_name }}
+            </option>
+          </select>
+          
+          <input type="date" v-model="selectedDate" @change="fetchStats">
+          
+          <button @click="syncRequests">🔄 同步数据</button>
+        </div>
+      </div>
+      
+      <!-- 趋势图表 -->
+      <div class="card">
+        <h2 style="margin-bottom: 15px;">📈 请求趋势</h2>
+        <div class="chart-container">
+          <canvas id="trendChart"></canvas>
+        </div>
+      </div>
+      
+      <!-- Agent 对比 -->
+      <div class="card">
+        <h2 style="margin-bottom: 15px;">👥 Agent 对比</h2>
+        <table class="agent-table" v-if="agentComparison.agents.length > 0">
+          <thead>
+            <tr>
+              <th>Agent</th>
+              <th>请求次数</th>
+              <th>Token 消耗</th>
+              <th>占比</th>
+              <th>平均 Token/请求</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="agent in agentComparison.agents" :key="agent.agent_id">
+              <td>{{ agent.agent_name }}</td>
+              <td>{{ agent.count.toLocaleString() }}</td>
+              <td>{{ agent.tokens.toLocaleString() }}</td>
+              <td>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <div style="width: 100px; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;">
+                    <div :style="{width: agent.percent + '%', height: '100%', background: '#667eea'}"></div>
+                  </div>
+                  <span>{{ agent.percent.toFixed(1) }}%</span>
+                </div>
+              </td>
+              <td>{{ Math.round(agent.tokens / agent.count).toLocaleString() }}</td>
+            </tr>
+          </tbody>
+        </table>
+        <div v-else style="text-align: center; padding: 40px; color: #a0aec0;">
+          暂无数据
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script src="config.js"></script>
+  <script>
+    const API = window.LOBSTER_CONFIG;
+    
+    const { createApp } = Vue;
+    
+    createApp({
+      data() {
+        return {
+          selectedPeriod: 'daily',
+          selectedAgent: '',
+          selectedDate: new Date().toISOString().split('T')[0],
+          stats: {},
+          agents: [],
+          agentComparison: {},
+          chart: null
+        }
+      },
+      computed: {
+        avgTokens() {
+          if (!this.stats.total?.count || this.stats.total.count === 0) return 0;
+          return Math.round((this.stats.total?.tokens || 0) / this.stats.total.count);
+        }
+      },
+      methods: {
+        async fetchStats() {
+          try {
+            // 获取统计数据
+            const params = new URLSearchParams({
+              period: this.selectedPeriod,
+              date: this.selectedDate
+            });
+            if (this.selectedAgent) {
+              params.append('agent_id', this.selectedAgent);
+            }
+            
+            const res = await fetch(API.getApiUrl(`/requests/stats?${params}`));
+            this.stats = await res.json();
+            
+            // 获取 Agent 列表
+            const agentsRes = await fetch(API.getApiUrl('/requests/agents'));
+            const agentsData = await agentsRes.json();
+            this.agents = agentsData.agents || [];
+            
+            // 获取 Agent 对比
+            const compRes = await fetch(API.getApiUrl(`/requests/stats?period=comparison&date=${this.selectedDate}`));
+            this.agentComparison = await compRes.json();
+            
+            // 更新图表
+            this.updateChart();
+          } catch (err) {
+            console.error('获取统计数据失败:', err);
+          }
+        },
+        async syncRequests() {
+          try {
+            const res = await fetch(API.getApiUrl('/requests/sync'), {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({lookback_hours: 24})
+            });
+            const result = await res.json();
+            if (result.success) {
+              alert(`✅ 已同步 ${result.synced_count} 条请求记录`);
+              this.fetchStats();
+            }
+          } catch (err) {
+            alert('❌ 同步失败：' + err.message);
+          }
+        },
+        updateChart() {
+          const ctx = document.getElementById('trendChart').getContext('2d');
+          
+          let labels, data;
+          if (this.selectedPeriod === 'daily') {
+            labels = this.stats.hourly?.map(h => `${h.hour}:00`) || [];
+            data = this.stats.hourly?.map(h => h.count) || [];
+          } else {
+            labels = this.stats.daily?.map(d => d.day.substring(5)) || [];
+            data = this.stats.daily?.map(d => d.count) || [];
+          }
+          
+          if (this.chart) {
+            this.chart.destroy();
+          }
+          
+          this.chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: labels,
+              datasets: [{
+                label: '请求次数',
+                data: data,
+                borderColor: '#667eea',
+                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                tension: 0.4,
+                fill: true
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  display: true
+                }
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  ticks: {
+                    stepSize: 1
+                  }
+                }
+              }
+            }
+          });
+        }
+      },
+      mounted() {
+        this.fetchStats();
+        // 每小时自动刷新
+        setInterval(() => this.fetchStats(), 3600000);
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>

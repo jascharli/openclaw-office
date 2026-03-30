@@ -1,0 +1,77 @@
+# 龙虾办公室 - .gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# 测试
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 数据库
+backend/lobster_office.db
+*.db
+*.sqlite
+
+# 配置（保留 example）
+config.json
+.env
+backend/config.json
+backend/.env
+
+# 日志
+*.log
+logs/
+backend/logs/
+
+# 临时文件
+/tmp/*
+*.pid
+*.port
+
+# Docker
+docker-compose.override.yml
+
+# 操作系统
+.DS_Store
+Thumbs.db
+
+# 构建产物
+build/
+dist/
+
+# 其他
+.memory/
+.daily-logs/
+.agents/
+.skills/
+.feishu-docs/

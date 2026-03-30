@@ -1,0 +1,45 @@
+{
+  "app": {
+    "name": "龙虾办公室",
+    "version": "1.0.0",
+    "description": "AI 团队工作空间 - 上帝视角的实时监控"
+  },
+  "server": {
+    "host": "0.0.0.0",
+    "port": 8000,
+    "frontend_port": 5173
+  },
+  "database": {
+    "path": "./lobster_office.db",
+    "timezone": "Asia/Shanghai"
+  },
+  "agents": {
+    "scan_mode": "auto",
+    "scan_base_dir": "~/.openclaw/agents",
+    "custom_agents": []
+  },
+  "token_budget": {
+    "daily": 500000,
+    "monthly": 10000000
+  },
+  "data_sync": {
+    "request_sync_interval_minutes": 5,
+    "agent_sync_interval_minutes": 2,
+    "session_sync_interval_minutes": 5,
+    "task_sync_interval_minutes": 10,
+    "request_lookback_hours": 6,
+    "agent_lookback_hours": 1,
+    "session_lookback_hours": 24
+  },
+  "features": {
+    "handover_enabled": true,
+    "reminder_enabled": true,
+    "feishu_enabled": false,
+    "task_extraction_enabled": true
+  },
+  "feishu": {
+    "webhook_url": "",
+    "app_id": "",
+    "app_secret": ""
+  }
+}

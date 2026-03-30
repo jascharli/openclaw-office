@@ -1,0 +1,4227 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <!-- CSP: 允许 Vue 3 使用 eval 和 API 连接，支持局域网访问 -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com; style-src 'self' 'unsafe-inline'; font-src 'self' https://unpkg.com; connect-src *;">
+  <title>🦞 龙虾办公室 - AI 团队工作空间 v1.0.2</title>
+  <script src="config.js"></script>
+    <script>
+      // 检查配置是否加载
+      console.log('🔍 检查配置加载情况...');
+      if (window.LOBSTER_CONFIG) {
+        console.log('✅ 配置加载成功:', window.LOBSTER_CONFIG);
+      } else {
+        console.error('❌ 配置加载失败');
+      }
+    </script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js?v=3.4.21"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 10px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    /* ===== 移动端专用样式 (< 768px) ===== */
+    @media (max-width: 767px) {
+      body {
+        padding: 0;
+        background: #f5f5f5;
+      }
+
+      .container {
+        max-width: 100%;
+      }
+
+      /* 移动端头部 */
+      header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        margin: 0 0 10px 0;
+        padding: 15px 10px;
+        text-align: center;
+      }
+
+      header h1 {
+        font-size: 1.5em;
+        margin-bottom: 5px;
+      }
+
+      header p {
+        font-size: 0.85em;
+        opacity: 0.9;
+      }
+
+      /* 移动端状态栏 - 两行三列布局 */
+      .status-bar {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        grid-template-rows: auto auto !important;
+        gap: 10px !important;
+        padding: 15px 12px !important;
+        background: white !important;
+        margin-bottom: 10px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        align-items: center;
+      }
+
+      .status-item {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center;
+        justify-content: center;
+        min-width: 0;
+        padding: 8px 5px !important;
+        background: #f8f9fa;
+        border-radius: 8px;
+      }
+
+      .status-label {
+        font-size: 0.75em;
+        color: #666;
+        margin-bottom: 4px;
+        white-space: nowrap;
+        text-align: center;
+      }
+
+      .status-value {
+        font-size: 1.4em;
+        font-weight: 700;
+        color: #333;
+        text-align: center;
+      }
+
+      /* 刷新按钮 - 第二行第三列 */
+      .refresh-btn {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 12px !important;
+        font-size: 0.85em;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        white-space: nowrap;
+        gap: 6px;
+        box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+      }
+
+      /* 服务商统计网格 - 响应式 */
+      .provider-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+
+      .provider-stat-card {
+        background: white;
+        border-radius: 10px;
+        padding: 12px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+
+      /* 简洁横向指标展示 */
+      .provider-stats-horizontal {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-bottom: 20px;
+        width: 100%;
+      }
+
+      .provider-stat-row-simple {
+        background: white;
+        border-radius: 8px;
+        padding: 16px 20px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        border-top: 3px solid;
+        width: 100%;
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+      }
+
+      .provider-name-simple {
+        font-size: 1em;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 16px;
+        min-width: 100px;
+        max-width: 150px;
+      }
+
+      .metrics-simple {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 20px;
+        width: 100%;
+        flex: 1;
+      }
+
+      .metric-simple {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .metric-label-simple {
+        font-size: 0.75em;
+        color: #9ca3af;
+        margin-bottom: 4px;
+        font-weight: 500;
+      }
+
+      .metric-value-simple {
+        font-size: 1.3em;
+        font-weight: 700;
+        line-height: 1.2;
+      }
+
+      /* 指标图标容器样式 */
+      .metric-icon-container {
+        transition: transform 0.2s ease;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .metric-icon-container:hover {
+        transform: translateY(-2px);
+      }
+
+      .metric-icon {
+        font-size: 1.5em;
+        margin-bottom: 4px;
+      }
+
+      .metric-value {
+        font-size: 1.3em;
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+
+      .metric-label {
+        font-size: 0.8em;
+        opacity: 0.9;
+      }
+
+      /* 移动端适配 */
+      @media (max-width: 768px) {
+        .provider-stat-row-simple {
+          padding: 12px 14px;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 12px;
+        }
+
+        .provider-name-simple {
+          margin-bottom: 0;
+          font-size: 0.95em;
+          min-width: auto;
+          max-width: none;
+        }
+
+        .metrics-simple {
+          grid-template-columns: repeat(4, 1fr);
+          gap: 8px;
+          width: 100%;
+        }
+
+        .metric-simple {
+          align-items: center;
+        }
+
+        .metric-icon-container {
+          padding: 6px 8px !important;
+          border-radius: 6px !important;
+        }
+
+        .metric-value {
+          font-size: 1em;
+          font-weight: 700;
+        }
+
+        .metric-label {
+        font-size: 0.65em !important;
+        margin-bottom: 2px !important;
+      }
+
+      /* 移动端使用总计面板 - 2行3列布局 */
+      .task-panel > div:first-of-type {
+        grid-template-columns: repeat(3, 1fr) !important;
+        grid-template-rows: auto auto !important;
+        gap: 10px !important;
+      }
+
+      .task-panel .token-stat-card {
+        padding: 12px 8px !important;
+      }
+
+      .task-panel .token-stat-value {
+        font-size: 1.3em !important;
+      }
+
+      .provider-stat-header {
+        margin-bottom: 10px;
+      }
+
+      .provider-stat-name {
+        font-size: 1.1em;
+        font-weight: 600;
+        color: #333;
+      }
+
+      .provider-stats-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+
+      .provider-stat-item {
+        text-align: center;
+        padding: 6px;
+      }
+
+      .provider-stat-value {
+        font-size: 1.4em;
+        font-weight: 700;
+        color: #333;
+      }
+
+      .provider-stat-label {
+        font-size: 0.75em;
+        color: #666;
+        margin-top: 2px;
+      }
+
+      /* 服务商图例 */
+      .provider-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 10px;
+        background: #f8f9fa;
+        border-radius: 8px;
+      }
+
+      .legend-item {
+        color: white;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 0.8em;
+        text-align: center;
+        display: inline-block;
+        white-space: nowrap;
+      }
+
+      /* 分组柱状图 */
+      .hourly-bars-grouped {
+        display: flex;
+        gap: 4px;
+        align-items: end;
+        height: 180px;
+        padding: 10px 5px;
+        background: #f8f9fa;
+        border-radius: 8px;
+      }
+
+      .hourly-bar-grouped {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .hourly-bars-stack {
+        flex: 1;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: flex-end;
+        background: rgba(0,0,0,0,0.05);
+        border-radius: 4px;
+        overflow: hidden;
+      }
+
+      .hourly-bar-segment {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: opacity 0.2s;
+      }
+
+      .hourly-bar-segment:hover {
+        opacity: 0.85;
+      }
+
+      .hourly-bar-segment-count {
+        color: white;
+        font-size: 0.7em;
+        font-weight: 600;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+      }
+
+      /* 纵向堆叠柱状图（PC端） */
+      .hourly-bars-vertical-stacked {
+        display: block;
+        padding: 20px 10px 10px;
+        background: #f8f9fa;
+        border-radius: 8px;
+      }
+
+      /* 纵向分组柱状图（PC端） */
+      .hourly-bars-vertical-grouped {
+        display: block;
+        padding: 20px 10px 10px;
+        background: #f8f9fa;
+        border-radius: 8px;
+      }
+
+      .hourly-vertical-container {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-around;
+        height: 200px;
+        gap: 4px;
+      }
+
+      .hourly-vertical-bar-wrapper {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        max-width: 40px;
+      }
+
+      .hourly-vertical-bar-group-wrapper {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        max-width: 80px;
+      }
+
+      .hourly-vertical-bar-group {
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        gap: 4px;
+        width: 100%;
+      }
+
+      .hourly-vertical-bar {
+        flex: 1;
+        max-width: 20px;
+        transition: opacity 0.2s;
+        cursor: pointer;
+        min-height: 2px;
+        border-radius: 4px 4px 0 0;
+        background: #667eea;
+      }
+
+      .hourly-vertical-bar:hover {
+        opacity: 0.85;
+      }
+
+      .hourly-vertical-segment {
+        width: 100%;
+        transition: opacity 0.2s;
+        cursor: pointer;
+        min-height: 1px;
+      }
+
+      .hourly-vertical-segment:hover {
+        opacity: 0.85;
+      }
+
+      .hourly-vertical-label {
+        font-size: 0.75em;
+        color: #666;
+        text-align: center;
+      }
+
+      /* 横向堆叠柱状图（手机端） */
+      .hourly-bars-horizontal-stacked {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        padding: 12px;
+        background: #f8f9fa;
+        border-radius: 10px;
+      }
+
+      .hourly-bar-row-stacked {
+        display: grid;
+        grid-template-columns: 45px 1fr 55px;
+        gap: 12px;
+        align-items: center;
+        padding: 4px 0;
+      }
+
+      .hourly-bar-label-stacked {
+        font-size: 0.9em;
+        color: #444;
+        font-weight: 600;
+        text-align: right;
+      }
+
+      .hourly-bar-container-stacked {
+        background: #e8e8e8;
+        border-radius: 6px;
+        height: 28px;
+        overflow: hidden;
+        box-shadow: inset 0 1px 2px rgba(0,0,0,0.08);
+      }
+
+      .hourly-bar-stacked {
+        display: flex;
+        height: 100%;
+        border-radius: 6px;
+        overflow: hidden;
+      }
+
+      .hourly-bar-segment-stacked {
+        height: 100%;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        position: relative;
+      }
+
+      .hourly-bar-segment-stacked:hover {
+        opacity: 0.85;
+        transform: scaleY(1.05);
+      }
+
+      .hourly-bar-total {
+        font-size: 0.9em;
+        color: #333;
+        font-weight: 700;
+        text-align: left;
+      }
+
+    /* 配置按钮和微信二维码样式 - 统一使用一套布局 */
+    .wechat-qrcode-mobile {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      margin-bottom: 15px;
+    }
+
+    .qrcode-container-mobile {
+      padding: 15px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .qrcode-image-mobile {
+      width: 180px;
+      height: auto;
+      object-fit: contain;
+      border-radius: 12px;
+    }
+
+    .config-btn-container-mobile {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+    }
+
+    .config-btn-mobile {
+      padding: 10px 20px;
+      background: transparent;
+      color: #666;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+
+        /* 移动端每小时请求量 - 横向条形图 */
+        .hourly-chart {
+          background: white;
+          padding: 15px;
+          border-radius: 12px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+          margin-top: 10px;
+        }
+
+        /* 移动端隐藏纵向条形图，显示横向条形图 */
+        .hourly-bars {
+          display: none !important;
+        }
+
+        .hourly-bars-horizontal {
+          display: flex !important;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        /* 移动端横向堆叠条形图样式 */
+        .hourly-bars-horizontal-stacked {
+          background: white !important;
+          padding: 12px !important;
+          border-radius: 12px !important;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
+          margin-top: 0 !important;
+        }
+
+        /* 移动端图例样式 */
+        .provider-legend {
+          margin-bottom: 10px !important;
+          padding: 8px 10px !important;
+          display: flex !important;
+          flex-wrap: wrap !important;
+          gap: 8px !important;
+          background: #f5f5f5 !important;
+          border-radius: 8px !important;
+        }
+
+        .hourly-bar-row-stacked {
+          display: grid !important;
+          grid-template-columns: 40px 1fr 50px !important;
+          gap: 10px !important;
+          align-items: center !important;
+          background: #fafafa !important;
+          padding: 8px 10px !important;
+          border-radius: 8px !important;
+          overflow: hidden !important;
+          margin-bottom: 6px !important;
+        }
+
+        .hourly-bar-label-stacked {
+          font-size: 0.9em !important;
+          color: #444 !important;
+          font-weight: 600 !important;
+          text-align: center !important;
+        }
+
+        .hourly-bar-container-stacked {
+          background: #e8e8e8 !important;
+          border-radius: 8px !important;
+          height: 22px !important;
+          position: relative !important;
+          overflow: hidden !important;
+          box-shadow: inset 0 1px 2px rgba(0,0,0,0.06) !important;
+        }
+
+        .hourly-bar-stacked {
+          display: flex !important;
+          height: 100% !important;
+          border-radius: 8px !important;
+          overflow: hidden !important;
+        }
+
+        .hourly-bar-segment-stacked {
+          height: 100% !important;
+          transition: all 0.2s ease !important;
+          cursor: pointer !important;
+        }
+
+        .hourly-bar-segment-stacked:hover {
+          opacity: 0.85 !important;
+        }
+
+        .hourly-bar-total {
+          font-size: 0.9em !important;
+          color: #333 !important;
+          font-weight: 700 !important;
+          text-align: right !important;
+          white-space: nowrap !important;
+          overflow: hidden !important;
+          text-overflow: ellipsis !important;
+        }
+
+        .hourly-bar-row {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .hourly-label {
+          font-size: 0.8em;
+          color: #666;
+          min-width: 50px;
+          text-align: right;
+          font-weight: 600;
+        }
+
+        .hourly-bar-container {
+          flex: 1;
+          background: #f0f0f0;
+          border-radius: 4px;
+          height: 24px;
+          overflow: hidden;
+        }
+
+        .hourly-bar-horizontal {
+          height: 100%;
+          background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+          border-radius: 4px;
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          padding-right: 8px;
+          transition: width 0.3s ease;
+          min-width: 2%;
+        }
+
+        .hourly-bar-horizontal.peak {
+          background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
+        }
+
+        .hourly-bar-count {
+          font-size: 0.75em;
+          font-weight: 700;
+          color: white;
+          white-space: nowrap;
+        }
+
+        /* 移动端区域 - 上下排列 */
+        .zones {
+          display: flex !important;
+          flex-direction: column !important;  /* 上下排列 */
+          gap: 12px !important;
+        }
+
+        .zone {
+          background: white;
+          padding: 15px;
+          border-radius: 12px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+          border-top: 3px solid #667eea;
+        }
+
+        .zone-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 15px;
+          padding-bottom: 10px;
+          border-bottom: 2px solid #f0f0f0;
+        }
+
+        .zone-icon {
+          font-size: 1.3em;
+          margin-right: 8px;
+        }
+
+        .zone-title {
+          font-size: 1.1em;
+          font-weight: 600;
+          flex: 1;
+        }
+
+        .zone-count {
+          background: #667eea;
+          color: white;
+          padding: 4px 10px;
+          border-radius: 12px;
+          font-size: 0.85em;
+          font-weight: 700;
+        }
+
+        /* 移动端 Agent 卡片 - 上下排列 */
+        .agent-card {
+          display: flex;
+          flex-direction: column;
+          padding: 15px;
+          margin-bottom: 12px;
+          background: #f8f9fa;
+          border-radius: 10px;
+          border-left: 4px solid #667eea;
+        }
+
+        .agent-header {
+          display: flex;
+          flex-direction: row;
+          align-items: center;
+          gap: 12px;
+          margin-bottom: 10px;
+        }
+
+        .agent-avatar {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.2em;
+          font-weight: 700;
+          color: white;
+          flex-shrink: 0;
+        }
+
+        .agent-info {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 5px;
+        }
+
+        .agent-name {
+          font-size: 1em;
+          font-weight: 700;
+          color: #333;
+        }
+
+        .agent-task {
+          font-size: 0.85em;
+          color: #666;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .agent-status {
+          font-size: 0.8em;
+          padding: 4px 10px;
+          border-radius: 12px;
+          font-weight: 600;
+          flex-shrink: 0;
+        }
+
+        /* 移动端任务清单 - 卡片式 */
+        .agent-task-section {
+          background: white;
+          margin: 10px 0;
+          padding: 15px;
+          border-radius: 12px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .agent-task-section h3 {
+          font-size: 1.05em;
+          margin-bottom: 15px;
+          color: #333;
+          font-weight: 700;
+        }
+
+        .agent-task-list {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+
+        .agent-task-card {
+          background: #f8f9fa;
+          padding: 15px;
+          border-radius: 10px;
+          border-left: 4px solid #667eea;
+        }
+
+        /* 移动端请求统计 - 渐变卡片 */
+        .request-stats-section {
+          background: white;
+          margin: 10px 0;
+          padding: 15px;
+          border-radius: 12px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .request-stats-section h3 {
+          font-size: 1.05em;
+          margin-bottom: 12px;
+          color: #333;
+          font-weight: 700;
+        }
+
+        .request-stats-summary {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 10px;
+          margin-bottom: 15px;
+        }
+
+        .request-stat-card {
+          padding: 15px 12px;
+          border-radius: 10px;
+          text-align: center;
+          color: white;
+          box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+        }
+
+        .request-stat-card:nth-child(1) {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .request-stat-card:nth-child(2) {
+          background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+        .request-stat-card:nth-child(3) {
+          background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+        .request-stat-card:nth-child(4) {
+          background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        }
+
+        .request-stat-value {
+          font-size: 1.6em;
+          font-weight: 700;
+          margin-bottom: 4px;
+        }
+
+        .request-stat-label {
+          font-size: 0.75em;
+          opacity: 0.95;
+        }
+
+        /* 移动端 Token 统计 - 白色卡片 */
+        .task-panel {
+          background: white;
+          margin: 10px 0;
+          padding: 15px;
+          border-radius: 12px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .task-panel h3 {
+          font-size: 1.05em;
+          margin-bottom: 12px;
+          color: #333;
+          font-weight: 700;
+        }
+
+        .token-stats-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 10px;
+        }
+
+        .token-stat-card {
+          padding: 15px 12px;
+          border-radius: 10px;
+          text-align: center;
+          background: #f8f9fa;
+        }
+
+        /* 移动端任务条 */
+        .task-item {
+          padding: 12px;
+          margin-bottom: 8px;
+        }
+
+        .task-item-header {
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+
+        .task-item-priority {
+          font-size: 0.7em;
+          padding: 2px 6px;
+        }
+
+        .task-item-name {
+          flex: 1;
+          min-width: 0;
+          word-break: break-word;
+        }
+
+        .task-item-status {
+          font-size: 0.7em;
+          padding: 3px 8px;
+        }
+
+        .task-handover-hint {
+          display: none; /* 移动端不显示悬停提示 */
+        }
+
+        /* 移动端每小时请求量图表 - 横向条形图（Y 轴时间，X 轴数量） */
+        .hourly-chart {
+          background: white;
+          padding: 15px;
+          border-radius: 12px;
+          margin-top: 15px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+          overflow: hidden; /* 关键：防止溢出 */
+        }
+
+        .hourly-chart h4 {
+          font-size: 1em;
+          margin-bottom: 12px;
+          color: #333;
+        }
+
+        .hourly-bars {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        .hourly-bar-row {
+          display: grid;
+          grid-template-columns: 45px 1fr 50px; /* 时间 | 进度条 | 数值 */
+          gap: 10px;
+          align-items: center;
+          background: #f8f9fa;
+          padding: 10px 12px;
+          border-radius: 8px;
+          overflow: hidden; /* 关键：防止溢出 */
+        }
+
+        .hourly-bar-label {
+          font-size: 0.85em;
+          color: #666;
+          font-weight: 600;
+          text-align: left;
+        }
+
+        .hourly-bar-container {
+          background: #e5e7eb;
+          border-radius: 6px;
+          height: 16px;
+          position: relative;
+          overflow: hidden; /* 关键：防止进度条溢出 */
+        }
+
+        .hourly-bar {
+          height: 100%;
+          background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+          border-radius: 6px;
+          transition: width 0.3s ease;
+          min-width: 4px; /* 最小宽度，确保可见 */
+          max-width: 100%; /* 关键：限制最大宽度 */
+        }
+
+        .hourly-bar-value {
+          font-size: 0.85em;
+          color: #667eea;
+          font-weight: 700;
+          text-align: right;
+          white-space: nowrap;
+          overflow: hidden; /* 关键：防止文字溢出 */
+          text-overflow: ellipsis;
+        }
+
+        /* 高峰时段高亮 */
+        .hourly-bar-row.peak {
+          background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+          border: 1px solid #f59e0b;
+        }
+
+        .hourly-bar-row.peak .hourly-bar-label,
+        .hourly-bar-row.peak .hourly-bar-value {
+          color: #92400e;
+          font-weight: 700;
+        }
+      }
+
+      /* Token 统计表格 */
+      .token-stats-table {
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      .token-stats-header {
+        display: grid;
+        grid-template-columns: 1fr 100px 120px 100px 120px;
+        background: #f3f4f6;
+        font-weight: 600;
+      }
+
+      .token-stats-header > div {
+        padding: 10px 12px;
+      }
+
+      .token-stats-row {
+        display: grid;
+        grid-template-columns: 1fr 100px 120px 100px 120px;
+        border-bottom: 1px solid #e5e7eb;
+      }
+
+      .token-stats-row:last-child {
+        border-bottom: none;
+      }
+
+      .token-stats-row > div {
+        padding: 10px 12px;
+      }
+
+      .progress-bar {
+        width: 100%;
+        height: 20px;
+        background: #e5e7eb;
+        border-radius: 10px;
+        overflow: hidden;
+      }
+
+      .progress-bar-fill {
+        height: 100%;
+        text-align: center;
+        transition: width 0.3s ease;
+      }
+
+      .progress-text {
+        color: white;
+        font-size: 0.75em;
+        font-weight: 600;
+        line-height: 20px;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+      }
+
+      /* 移动端大模型请求统计 - 两行两列 */
+      .request-stats-summary {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px !important;
+      }
+
+      .request-stat-card {
+        padding: 12px 8px !important;
+      }
+
+      .request-stat-value {
+        font-size: 1.5em !important;
+      }
+
+      .request-stat-label {
+        font-size: 0.75em !important;
+      }
+
+      /* 移动端 Token 统计 - 两行两列 */
+      .token-stats-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px;
+      }
+
+      .token-stat-card {
+        padding: 12px 8px !important;
+      }
+
+      .token-stat-value {
+        font-size: 1.3em !important;
+      }
+
+      .token-stat-label {
+        font-size: 0.75em !important;
+      }
+
+      /* 移动端每小时请求量 - 横向条形图 */
+      .hourly-chart {
+        background: white;
+        padding: 15px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        margin-top: 10px;
+      }
+
+      /* 移动端隐藏纵向条形图，显示横向条形图 */
+      .hourly-bars {
+        display: none !important;
+      }
+
+      .hourly-bars-horizontal {
+        display: flex !important;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .hourly-bar-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .hourly-label {
+        font-size: 0.8em;
+        color: #666;
+        min-width: 50px;
+        text-align: right;
+        font-weight: 600;
+      }
+
+      .hourly-bar-container {
+        flex: 1;
+        background: #f0f0f0;
+        border-radius: 4px;
+        height: 24px;
+        overflow: hidden;
+      }
+
+      .hourly-bar-horizontal {
+        height: 100%;
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding-right: 8px;
+        transition: width 0.3s ease;
+        min-width: 2%;
+      }
+
+      .hourly-bar-horizontal.peak {
+        background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
+      }
+
+      .hourly-bar-count {
+        font-size: 0.75em;
+        font-weight: 700;
+        color: white;
+        white-space: nowrap;
+      }
+
+      /* 移动端区域 - 上下排列 */
+      .zones {
+        display: flex !important;
+        flex-direction: column !important;  /* 上下排列 */
+        gap: 12px !important;
+      }
+
+      .zone {
+        background: white;
+        padding: 15px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        border-top: 3px solid #667eea;
+      }
+
+      .zone-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #f0f0f0;
+      }
+
+      .zone-icon {
+        font-size: 1.3em;
+        margin-right: 8px;
+      }
+
+      .zone-title {
+        font-size: 1.1em;
+        font-weight: 600;
+        flex: 1;
+      }
+
+      .zone-count {
+        background: #667eea;
+        color: white;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 0.85em;
+        font-weight: 700;
+      }
+
+      /* 移动端 Agent 卡片 - 上下排列 */
+      .agent-card {
+        display: flex;
+        flex-direction: column;
+        padding: 15px;
+        margin-bottom: 12px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        border-left: 4px solid #667eea;
+      }
+
+      .agent-header {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 10px;
+      }
+
+      .agent-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2em;
+        font-weight: 700;
+        color: white;
+        flex-shrink: 0;
+      }
+
+      .agent-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+
+      .agent-name {
+        font-size: 1em;
+        font-weight: 700;
+        color: #333;
+      }
+
+      .agent-task {
+        font-size: 0.85em;
+        color: #666;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .agent-status {
+        font-size: 0.8em;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-weight: 600;
+        flex-shrink: 0;
+      }
+
+      /* 移动端任务清单 - 卡片式 */
+      .agent-task-section {
+        background: white;
+        margin: 10px 0;
+        padding: 15px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      }
+
+      .agent-task-section h3 {
+        font-size: 1.05em;
+        margin-bottom: 15px;
+        color: #333;
+        font-weight: 700;
+      }
+
+      .agent-task-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .agent-task-card {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 10px;
+        border-left: 4px solid #667eea;
+      }
+
+      /* 移动端请求统计 - 渐变卡片 */
+      .request-stats-section {
+        background: white;
+        margin: 10px 0;
+        padding: 15px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      }
+
+      .request-stats-section h3 {
+        font-size: 1.05em;
+        margin-bottom: 12px;
+        color: #333;
+        font-weight: 700;
+      }
+
+      .request-stats-summary {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        margin-bottom: 15px;
+      }
+
+      .request-stat-card {
+        padding: 15px 12px;
+        border-radius: 10px;
+        text-align: center;
+        color: white;
+        box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+      }
+
+      .request-stat-card:nth-child(1) {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      }
+      .request-stat-card:nth-child(2) {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      }
+      .request-stat-card:nth-child(3) {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      }
+      .request-stat-card:nth-child(4) {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      }
+
+      .request-stat-value {
+        font-size: 1.6em;
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+
+      .request-stat-label {
+        font-size: 0.75em;
+        opacity: 0.95;
+      }
+
+      /* 移动端 Token 统计 - 白色卡片 */
+      .task-panel {
+        background: white;
+        margin: 10px 0;
+        padding: 15px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      }
+
+      .task-panel h3 {
+        font-size: 1.05em;
+        margin-bottom: 12px;
+        color: #333;
+        font-weight: 700;
+      }
+
+      .token-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+      }
+
+      .token-stat-card {
+        padding: 15px 12px;
+        border-radius: 10px;
+        text-align: center;
+        background: #f8f9fa;
+      }
+
+      /* 移动端任务条 */
+      .task-item {
+        padding: 12px;
+        margin-bottom: 8px;
+      }
+
+      .task-item-header {
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .task-item-priority {
+        font-size: 0.7em;
+        padding: 2px 6px;
+      }
+
+      .task-item-name {
+        flex: 1;
+        min-width: 0;
+        word-break: break-word;
+      }
+
+      .task-item-status {
+        font-size: 0.7em;
+        padding: 3px 8px;
+      }
+
+      .task-handover-hint {
+        display: none; /* 移动端不显示悬停提示 */
+      }
+
+      /* 移动端每小时请求量图表 - 横向条形图（Y 轴时间，X 轴数量） */
+      .hourly-chart {
+        background: white;
+        padding: 15px;
+        border-radius: 12px;
+        margin-top: 15px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        overflow: hidden; /* 关键：防止溢出 */
+      }
+
+      .hourly-chart h4 {
+        font-size: 1em;
+        margin-bottom: 12px;
+        color: #333;
+      }
+
+      .hourly-bars {
+        display: none !important;
+      }
+
+      .hourly-bar-row {
+        display: grid;
+        grid-template-columns: 45px 1fr 50px; /* 时间 | 进度条 | 数值 */
+        gap: 10px;
+        align-items: center;
+        background: #f8f9fa;
+        padding: 10px 12px;
+        border-radius: 8px;
+        overflow: hidden; /* 关键：防止溢出 */
+      }
+
+      .hourly-bar-label {
+        font-size: 0.85em;
+        color: #666;
+        font-weight: 600;
+        text-align: left;
+      }
+
+      .hourly-bar-container {
+        background: #e5e7eb;
+        border-radius: 6px;
+        height: 16px;
+        position: relative;
+        overflow: hidden; /* 关键：防止进度条溢出 */
+      }
+
+      .hourly-bar {
+        height: 100%;
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        border-radius: 6px;
+        transition: width 0.3s ease;
+        min-width: 4px; /* 最小宽度，确保可见 */
+        max-width: 100%; /* 关键：限制最大宽度 */
+      }
+
+      .hourly-bar-value {
+        font-size: 0.85em;
+        color: #667eea;
+        font-weight: 700;
+        text-align: right;
+        white-space: nowrap;
+        overflow: hidden; /* 关键：防止文字溢出 */
+        text-overflow: ellipsis;
+      }
+
+      /* 高峰时段高亮 */
+      .hourly-bar-row.peak {
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        border: 1px solid #f59e0b;
+      }
+
+      .hourly-bar-row.peak .hourly-bar-label,
+      .hourly-bar-row.peak .hourly-bar-value {
+        color: #92400e;
+        font-weight: 700;
+      }
+    }
+
+    /* ===== 平板端样式 (768px - 1024px) ===== */
+    @media (min-width: 768px) and (max-width: 1024px) {
+      .agent-task-list {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .token-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .zones {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    /* ===== 平板端样式 (768px-1024px) ===== */
+    @media (min-width: 768px) and (max-width: 1024px) {
+      /* 大模型请求统计 - 两行两列 */
+      .request-stats-summary {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+      }
+
+      .request-stat-card {
+        padding: 12px 8px;
+      }
+
+      .request-stat-value {
+        font-size: 1.5em;
+      }
+
+      .request-stat-label {
+        font-size: 0.75em;
+      }
+    }
+
+    /* ===== 桌面端样式 (> 1024px) ===== */
+    @media (min-width: 1025px) {
+      .agent-task-list {
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      }
+
+      .zones {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      /* 简洁横向指标展示 - 桌面端 */
+      .provider-stats-horizontal {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-bottom: 20px;
+        width: 100%;
+      }
+
+      .provider-stat-row-simple {
+        background: white;
+        border-radius: 8px;
+        padding: 16px 20px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        border-top: 3px solid;
+        width: 100%;
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+      }
+
+      .provider-name-simple {
+        font-size: 1em;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 16px;
+        min-width: 100px;
+        max-width: 150px;
+      }
+
+      .metrics-simple {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 20px;
+        width: 100%;
+        flex: 1;
+      }
+
+      .metric-simple {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .metric-icon-container {
+        transition: transform 0.2s ease;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .metric-icon-container:hover {
+        transform: translateY(-2px);
+      }
+
+      .metric-icon {
+        font-size: 1.5em;
+        margin-bottom: 4px;
+      }
+
+      .metric-value {
+        font-size: 1.3em;
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+
+      .metric-label {
+        font-size: 0.8em;
+        opacity: 0.9;
+      }
+    }
+
+    header {
+      text-align: center;
+      color: white;
+      margin-bottom: 10px;
+    }
+
+    header h1 {
+      font-size: 1.8em;
+      margin-bottom: 5px;
+    }
+
+    header p {
+      font-size: 0.95em;
+      opacity: 0.9;
+    }
+
+    .status-bar {
+      background: white;
+      border-radius: 8px;
+      padding: 10px 15px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      flex-wrap: wrap;
+    }
+
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-label {
+      font-weight: 600;
+      color: #666;
+      font-size: 0.9em;
+    }
+
+    .status-value {
+      font-size: 1.1em;
+      font-weight: bold;
+      color: #333;
+    }
+
+    /* 刷新按钮样式 */
+    .refresh-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 0.9em;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+      transition: all 0.2s ease;
+    }
+
+    .refresh-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(102, 126, 234, 0.4);
+    }
+
+    .refresh-btn:active {
+      transform: translateY(0);
+    }
+
+    .zones {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .zone {
+      background: white;
+      border-radius: 10px;
+      padding: 12px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .zone-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #eee;
+    }
+
+    .zone-icon {
+      font-size: 1.5em;
+    }
+
+    .zone-title {
+      font-size: 1.1em;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .zone-count {
+      background: #667eea;
+      color: white;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 0.8em;
+      font-weight: 600;
+    }
+
+    .agent-card {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 10px;
+      transition: all 0.2s ease;
+      border-left: 3px solid #667eea;
+    }
+
+    .agent-card:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+    }
+
+    .agent-card.working {
+      border-left-color: #f59e0b;
+    }
+
+    .agent-card.conversing {
+      border-left-color: #10b981;
+    }
+
+    .agent-card.idle {
+      border-left-color: #6b7280;
+    }
+
+    .agent-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .agent-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 1em;
+    }
+
+    .agent-name {
+      font-weight: 600;
+      font-size: 0.95em;
+      color: #333;
+    }
+
+    .agent-status {
+      margin-left: auto;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 0.75em;
+      font-weight: 600;
+    }
+
+    .status-working {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .status-conversing {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .status-idle {
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    .agent-task {
+      font-size: 0.95em;
+      color: #666;
+      margin-bottom: 8px;
+    }
+
+    .agent-task strong {
+      color: #333;
+    }
+
+    .progress-bar {
+      background: #e5e7eb;
+      border-radius: 10px;
+      height: 8px;
+      margin: 10px 0;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+      height: 100%;
+      transition: width 0.3s ease;
+    }
+
+    .agent-stats {
+      display: flex;
+      gap: 15px;
+      font-size: 0.85em;
+      color: #666;
+    }
+
+    .empty-zone {
+      text-align: center;
+      padding: 40px 20px;
+      color: #999;
+      font-size: 0.9em;
+    }
+
+    .stat {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .stat-label {
+      color: #999;
+    }
+
+    .stat-value {
+      font-weight: 600;
+      color: #333;
+    }
+
+    .task-panel {
+      background: white;
+      border-radius: 10px;
+      padding: 12px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .task-panel h3 {
+      margin-bottom: 10px;
+      color: #333;
+      font-size: 1.1em;
+    }
+
+    .task-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .task-item {
+      background: #f8f9fa;
+      padding: 12px 15px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .task-priority {
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.8em;
+      font-weight: 600;
+    }
+
+    .priority-0 {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .priority-1 {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .priority-2 {
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 50px;
+      color: white;
+      font-size: 1.5em;
+    }
+
+    .error {
+      background: #fee2e2;
+      color: #991b1b;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+
+    .refresh-btn {
+      background: white;
+      color: #667eea;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .refresh-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+
+    /* 任务清单板块 */
+    .agent-task-section {
+      background: white;
+      border-radius: 15px;
+      padding: 20px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      margin-top: 20px;
+    }
+
+    .agent-task-section h3 {
+      margin-bottom: 20px;
+      color: #333;
+      font-size: 1.4em;
+    }
+
+    .agent-task-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));  /* 自适应列数 */
+      gap: 15px;
+      align-items: start;  /* 顶部对齐 */
+    }
+
+    .agent-task-card {
+      background: #f8f9fa;
+      border-radius: 10px;
+      padding: 12px;
+      border-left: 4px solid #667eea;
+      /* 移除 max-height 和 overflow，让卡片自然伸展 */
+    }
+
+    .agent-task-card-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #e5e7eb;
+    }
+
+    .agent-task-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 1em;
+    }
+
+    .agent-task-name {
+      font-weight: 600;
+      font-size: 0.95em;
+      color: #333;
+      flex: 1;
+    }
+
+    .agent-task-stats {
+      display: flex;
+      gap: 10px;
+      font-size: 0.8em;
+      color: #666;
+      flex-wrap: wrap;
+    }
+
+    .task-stat {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .task-stat-value {
+      font-weight: 600;
+      color: #333;
+    }
+
+    .task-item {
+      background: white;
+      padding: 8px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      border-left: 3px solid #e5e7eb;
+      font-size: 0.85em;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .task-item:hover {
+      transform: translateX(5px);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      border-left-color: #10b981;
+    }
+
+    /* 移交提示 */
+    .task-handover-hint {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: #10b981;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.75em;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .task-item:hover .task-handover-hint {
+      opacity: 1;
+      visibility: visible;
+      right: 15px;
+    }
+
+    .task-item.completed {
+      border-left-color: #10b981;
+      background: #f0fdf4;
+    }
+
+    .task-item.in_progress {
+      border-left-color: #f59e0b;
+      background: #fffbeb;
+    }
+
+    .task-item.pending {
+      border-left-color: #6b7280;
+    }
+
+    /* 滚动条美化 */
+    .agent-task-card::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .agent-task-card::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 3px;
+    }
+
+    .agent-task-card::-webkit-scrollbar-thumb {
+      background: #667eea;
+      border-radius: 3px;
+    }
+
+    .agent-task-card::-webkit-scrollbar-thumb:hover {
+      background: #764ba2;
+    }
+
+    .task-item-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .task-item-priority {
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.75em;
+      font-weight: 600;
+    }
+
+    /* 移交按钮默认隐藏，悬停时显示 */
+    .task-handover-btn {
+      margin-left: 8px;
+      padding: 2px 8px;
+      background: #10b981;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.8em;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.2s ease;
+    }
+
+    .task-item:hover .task-handover-btn {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .priority-0 {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .priority-1 {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .priority-2 {
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    .task-item-name {
+      font-weight: 600;
+      color: #333;
+      flex: 1;
+    }
+
+    .task-item-status {
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 0.8em;
+      font-weight: 600;
+    }
+
+    .status-completed {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .status-in_progress {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .status-pending {
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    .status-blocked {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+
+    .task-item-time {
+      font-size: 0.85em;
+      color: #999;
+      margin-top: 5px;
+    }
+
+    /* 请求速率统计 */
+    .request-stats-section {
+      background: white;
+      border-radius: 15px;
+      padding: 20px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      margin-top: 20px;
+      width: 100%;
+      max-width: none;
+    }
+
+    .request-stats-section h3 {
+      margin-bottom: 20px;
+      color: #333;
+      font-size: 1.4em;
+    }
+
+    .request-stats-summary {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .request-stat-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 12px;
+      text-align: center;
+    }
+
+    .request-stat-value {
+      font-size: 2em;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .request-stat-label {
+      font-size: 0.9em;
+      opacity: 0.9;
+    }
+
+    /* PC 端每小时请求量图表 - 纵向条形图 */
+    .hourly-chart {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 12px;
+      margin-top: 15px;
+      overflow: hidden;
+    }
+
+    .hourly-chart h4 {
+      font-size: 1.1em;
+      margin-bottom: 15px;
+      color: #333;
+    }
+
+    /* PC 端图表样式 */
+    .pc-chart-container {
+      display: block;
+      padding: 15px;
+      background: #fafafa;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .pc-chart-bars {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      height: 260px;
+      gap: 4px;
+      padding: 10px 5px 35px 5px;
+      overflow-x: hidden;
+    }
+
+    .pc-chart-hour {
+      flex: 1;
+      min-width: 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      max-width: 40px;
+      position: relative;
+      height: 100%;
+      justify-content: flex-end;
+    }
+
+    .pc-chart-bar-group {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 4px;
+      width: 100%;
+      margin-bottom: 20px;
+    }
+
+    .pc-chart-bar {
+      width: 16px;
+      min-width: 8px;
+      transition: opacity 0.2s;
+      cursor: pointer;
+      min-height: 4px;
+      border-radius: 4px 4px 0 0;
+      background: #667eea;
+    }
+
+    .pc-chart-bar:hover {
+      opacity: 0.85;
+    }
+
+    /* 堆叠柱状图样式 */
+    .pc-chart-bar-stacked {
+      width: 24px;
+      min-width: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: flex-end;
+      background: rgba(0,0,0,0.03);
+      border-radius: 6px 6px 0 0;
+      overflow: visible;
+      box-shadow: inset 0 -2px 4px rgba(0,0,0,0.05);
+      position: relative;
+    }
+
+    .pc-chart-bar-segment {
+      transition: all 0.2s ease;
+      cursor: pointer;
+      min-height: 20px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .pc-chart-bar-segment:hover {
+      opacity: 0.85;
+    }
+
+    /* 柱状图数值标签 - 放在颜色块内部（白色） */
+    .pc-chart-bar-value {
+      font-size: 0.7em;
+      font-weight: 700;
+      color: white;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+      text-align: center;
+      padding: 2px 4px;
+      white-space: nowrap;
+    }
+
+    /* 柱状图数值标签 - 放在颜色块右侧（黑色，用于高度不足时） */
+    .pc-chart-bar-value-outside {
+      font-size: 0.7em;
+      font-weight: 600;
+      color: #333;
+      text-align: left;
+      padding: 2px 5px;
+      position: absolute;
+      left: 100%;
+      top: 50%;
+      transform: translateY(-50%);
+      white-space: nowrap;
+      background: rgba(255,255,255,0.95);
+      border-radius: 4px;
+      margin-left: 3px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    }
+
+    /* 柱形图总数标签 - 放在柱形图最顶部 */
+    .pc-chart-total {
+      font-size: 0.7em;
+      font-weight: 700;
+      color: #000;
+      text-align: center;
+      white-space: nowrap;
+      margin-bottom: 4px;
+      padding: 1px 3px;
+      background: transparent;
+    }
+
+    .pc-chart-label {
+      font-size: 0.9em;
+      color: #333;
+      white-space: nowrap;
+      position: absolute;
+      bottom: -25px;
+      text-align: center;
+      width: 100%;
+      font-weight: 700;
+    }
+
+    .hourly-bar {
+      flex: 1;
+      max-width: 50px;
+      background: linear-gradient(to top, #667eea, #764ba2);
+      border-radius: 4px 4px 0 0;
+      min-width: 25px;
+      position: relative;
+      transition: all 0.2s ease;
+    }
+
+    .hourly-bar:hover {
+      opacity: 0.85;
+      transform: translateY(-2px);
+    }
+
+    .hourly-bar-label {
+      position: absolute;
+      bottom: -22px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.7em;
+      color: #666;
+      white-space: nowrap;
+    }
+
+    .hourly-bar-value {
+      position: absolute;
+      top: -18px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.65em;
+      color: #667eea;
+      font-weight: 600;
+    }
+
+    /* 高峰时段高亮 */
+    .hourly-bar.peak {
+      background: linear-gradient(to top, #f59e0b, #d97706);
+    }
+
+    .hourly-bar.peak .hourly-bar-value {
+      color: #92400e;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="container">
+      <header>
+        <h1>🦞 龙虾办公室</h1>
+        <p>AI 团队工作空间 - 上帝视角的实时监控</p>
+        <div style="margin-top: 10px; font-size: 0.9em; display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
+          <span :style="{color: wsConnected ? '#10b981' : '#ef4444'}">
+            {{ wsConnected ? '🟢 WebSocket 已连接' : '🔴 WebSocket 未连接' }}
+          </span>
+        </div>
+      </header>
+
+      <div v-if="error" class="error">
+        {{ error }}
+      </div>
+
+      <div v-if="loading" class="loading">
+        加载中...
+      </div>
+
+      <div v-else>
+        <!-- 状态栏 -->
+        <div class="status-bar">
+          <!-- PC 端和移动端共用，通过 CSS 控制布局 -->
+          <div class="status-item">
+            <span class="status-label">📊 总数</span>
+            <span class="status-value">{{ agents.length }}</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">💼 办公</span>
+            <span class="status-value" style="color: #f59e0b;">{{ workingCount }}</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">💬 对话</span>
+            <span class="status-value" style="color: #10b981;">{{ conversingCount }}</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">😴 休闲</span>
+            <span class="status-value" style="color: #6b7280;">{{ idleCount }}</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">🔁 更新</span>
+            <span class="status-value" style="font-size: 1em;">{{ lastUpdate }}</span>
+          </div>
+          <button class="refresh-btn" @click="fetchData">🔄 刷新</button>
+        </div>
+
+        <!-- 三区域显示（按优先级：对话区 > 办公区 > 休闲区） -->
+        <div class="zones">
+          <!-- 1. 对话区（最高优先级） -->
+          <div class="zone">
+            <div class="zone-header">
+              <span class="zone-icon">💬</span>
+              <span class="zone-title">对话区</span>
+              <span class="zone-count">{{ conversingAgents.length }}</span>
+            </div>
+            <div v-for="agent in conversingAgents" :key="agent.agent_id" class="agent-card conversing">
+              <div class="agent-header">
+                <div class="agent-avatar">{{ agent.agent_name.charAt(0) }}</div>
+                <span class="agent-name">{{ agent.agent_name }}</span>
+                <span class="agent-status status-conversing">对话中</span>
+              </div>
+              <div class="agent-stats">
+                <div class="stat">
+                  <span class="stat-label">对话时长:</span>
+                  <span class="stat-value">{{ formatDuration(agent.elapsed_time) }}</span>
+                </div>
+                <div class="stat">
+                  <span class="stat-label">Token:</span>
+                  <span class="stat-value">{{ agent.token_used?.toLocaleString() || '0' }}</span>
+                </div>
+              </div>
+            </div>
+            <div v-if="conversingAgents.length === 0" class="empty-zone">
+              <p>💬 暂无正在对话的 Agent</p>
+            </div>
+          </div>
+
+          <!-- 2. 办公区 -->
+          <div class="zone">
+            <div class="zone-header">
+              <span class="zone-icon">💼</span>
+              <span class="zone-title">办公区</span>
+              <span class="zone-count">{{ workingAgents.length }}</span>
+            </div>
+            <div v-for="agent in workingAgents" :key="agent.agent_id" class="agent-card working">
+              <div class="agent-header">
+                <div class="agent-avatar">{{ agent.agent_name.charAt(0) }}</div>
+                <span class="agent-name">{{ agent.agent_name }}</span>
+                <span class="agent-status status-working">工作中</span>
+              </div>
+              <div class="agent-task">
+                <strong>任务:</strong> {{ agent.task_name || '无' }}
+              </div>
+              <div class="progress-bar">
+                <div class="progress-fill" :style="{ width: (agent.progress * 100) + '%' }"></div>
+              </div>
+              <div class="agent-stats">
+                <div class="stat">
+                  <span class="stat-label">进度:</span>
+                  <span class="stat-value">{{ (agent.progress * 100).toFixed(0) }}%</span>
+                </div>
+                <div class="stat">
+                  <span class="stat-label">已用:</span>
+                  <span class="stat-value">{{ formatDuration(agent.elapsed_time) }}</span>
+                </div>
+                <div class="stat">
+                  <span class="stat-label">Token:</span>
+                  <span class="stat-value">{{ agent.token_used?.toLocaleString() || '0' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 休闲区 -->
+          <div class="zone">
+            <div class="zone-header">
+              <span class="zone-icon">😴</span>
+              <span class="zone-title">休闲区</span>
+              <span class="zone-count">{{ idleAgents.length }}</span>
+            </div>
+            <div v-for="agent in idleAgents" :key="agent.agent_id" class="agent-card idle">
+              <div class="agent-header">
+                <div class="agent-avatar">{{ agent.agent_name.charAt(0) }}</div>
+                <span class="agent-name">{{ agent.agent_name }}</span>
+                <span class="agent-status status-idle">空闲</span>
+              </div>
+              <div class="agent-stats">
+                <div class="stat">
+                  <span class="stat-label">最后活跃:</span>
+                  <span class="stat-value">{{ formatTime(agent.last_activity) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Agent 今日任务情况 -->
+        <div class="agent-task-section">
+          <h3>📊 Agent 今日任务情况</h3>
+          <div class="agent-task-list">
+            <!-- 遍历所有 Agent，即使没有任务也显示 -->
+            <div v-for="agent in agents" :key="agent.agent_id" class="agent-task-card">
+              <div class="agent-task-card-header">
+                <div class="agent-task-avatar">{{ agent.agent_name.charAt(0).toUpperCase() }}</div>
+                <span class="agent-task-name">{{ agent.agent_name }}</span>
+              </div>
+              
+              <!-- 从 agentTasks 获取任务数据，如果没有则显示空状态 -->
+              <div v-if="agentTasks[agent.agent_id]" class="agent-task-stats" style="margin-bottom: 10px;">
+                <div class="task-stat">
+                  <span class="task-stat-value" style="color: #10b981;">✅ {{ agentTasks[agent.agent_id].completed_count || 0 }}</span>
+                  <span>已完成</span>
+                </div>
+                <div class="task-stat">
+                  <span class="task-stat-value" style="color: #667eea;">📋 {{ agentTasks[agent.agent_id].total_count || 0 }}</span>
+                  <span>总任务</span>
+                </div>
+                <div class="task-stat">
+                  <span class="task-stat-value" style="color: #f59e0b;">{{ Math.round(((agentTasks[agent.agent_id].completed_count || 0) / (agentTasks[agent.agent_id].total_count || 1)) * 100) }}%</span>
+                  <span>完成率</span>
+                </div>
+              </div>
+              <div v-else class="agent-task-stats" style="margin-bottom: 10px;">
+                <div class="task-stat">
+                  <span class="task-stat-value" style="color: #999;">✅ 0</span>
+                  <span>已完成</span>
+                </div>
+                <div class="task-stat">
+                  <span class="task-stat-value" style="color: #999;">📋 0</span>
+                  <span>总任务</span>
+                </div>
+                <div class="task-stat">
+                  <span class="task-stat-value" style="color: #999;">- 0%</span>
+                  <span>完成率</span>
+                </div>
+              </div>
+              
+              <!-- 任务列表 -->
+              <div v-if="agentTasks[agent.agent_id] && agentTasks[agent.agent_id].tasks && agentTasks[agent.agent_id].tasks.length > 0">
+                <div v-for="task in agentTasks[agent.agent_id].tasks" :key="task.task_id" 
+                     :class="['task-item', task.status === 'completed' ? 'completed' : task.status === 'in_progress' ? 'in_progress' : task.status === 'blocked' ? 'blocked' : 'pending']"
+                     @click="openHandoverDialog(task, agent.agent_id)"
+                     title="点击移交任务">
+                  <div class="task-item-header">
+                    <span :class="['task-item-priority', 'priority-' + task.priority]">P{{ task.priority }}</span>
+                    <span class="task-item-name">{{ task.task_name }}</span>
+                    <span :class="['task-item-status', 'status-' + task.status]">
+                      {{ task.status === 'completed' ? '✅ 完成' : task.status === 'in_progress' ? '🔄 进行中' : task.status === 'blocked' ? '❌ 执行失败' : '⏳ 待执行' }}
+                    </span>
+                    <span class="task-handover-hint">📤 点击移交</span>
+                  </div>
+                  <div v-if="task.started_at || task.completed_at" class="task-item-time">
+                    <span v-if="task.started_at">🚀 {{ formatDate(task.started_at) }}</span>
+                    <span v-if="task.completed_at" style="margin-left: 10px;">✅ {{ formatDate(task.completed_at) }}</span>
+                  </div>
+                </div>
+              </div>
+              <div v-else style="text-align: center; padding: 20px 10px; color: #999; font-size: 0.85em;">
+                📋 今日暂无任务
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 请求数据统计 -->
+        <div class="request-stats-section">
+          <h3>📈 大模型请求数据统计</h3>
+          <div v-if="!providerStats || !providerStats.providers || providerStats.providers.length === 0" style="text-align: center; padding: 30px; color: #666;">
+            暂无请求数据
+          </div>
+          <div v-else>
+            <!-- 服务商汇总统计：简洁横向指标展示 -->
+            <div class="provider-stats-horizontal">
+              <div v-for="provider in providerStats.providers" :key="provider.provider" 
+                   class="provider-stat-row-simple"
+                   :style="{ borderTopColor: getProviderColor(provider.provider) }">
+                <!-- 服务商名称 -->
+                <div class="provider-name-simple">{{ provider.provider }}</div>
+                
+                <!-- 4个指标横向排列 -->
+                <div class="metrics-simple">
+                  <div class="metric-simple">
+                    <div class="metric-icon-container" style="background: #667eea; color: white; padding: 8px 12px; border-radius: 8px; text-align: center; height: 70px; display: flex; flex-direction: column; justify-content: center;">
+                      <div class="metric-label" style="font-size: 0.75em; opacity: 0.9; margin-bottom: 4px;">请求</div>
+                      <div class="metric-value">{{ provider.request_count }}</div>
+                    </div>
+                  </div>
+                  <div class="metric-simple">
+                    <div class="metric-icon-container" style="background: #10b981; color: white; padding: 8px 12px; border-radius: 8px; text-align: center; height: 70px; display: flex; flex-direction: column; justify-content: center;">
+                      <div class="metric-label" style="font-size: 0.75em; opacity: 0.9; margin-bottom: 4px;">Token</div>
+                      <div class="metric-value">{{ provider.tokens_total?.toLocaleString() || '0' }}</div>
+                    </div>
+                  </div>
+                  <div class="metric-simple">
+                    <div class="metric-icon-container" style="background: #f59e0b; color: white; padding: 8px 12px; border-radius: 8px; text-align: center; height: 70px; display: flex; flex-direction: column; justify-content: center;">
+                      <div class="metric-label" style="font-size: 0.75em; opacity: 0.9; margin-bottom: 4px;">高峰时段</div>
+                      <div class="metric-value">{{ String(provider.peak_hour).padStart(2, '0') }}:00-{{ String((provider.peak_hour + 1) % 24).padStart(2, '0') }}:00</div>
+                    </div>
+                  </div>
+                  <div class="metric-simple">
+                    <div class="metric-icon-container" style="background: #8b5cf6; color: white; padding: 8px 12px; border-radius: 8px; text-align: center; height: 70px; display: flex; flex-direction: column; justify-content: center;">
+                      <div class="metric-label" style="font-size: 0.75em; opacity: 0.9; margin-bottom: 4px;">高峰请求</div>
+                      <div class="metric-value">{{ provider.peak_count }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 每小时请求量分组柱状图 -->
+            <div class="hourly-chart">
+              <h4 style="margin-bottom: 15px; color: #333; font-size: 1.1em;">📊 每小时请求量（按服务商分组）</h4>
+
+              <!-- PC 端：纵向堆叠柱状图（X轴时间，Y轴请求数） -->
+              <div class="pc-chart-container" v-show="!isMobile">
+                <div class="pc-chart-bars">
+                  <div v-for="(hour, index) in hourlyStats" :key="index"
+                       class="pc-chart-hour">
+                    <div class="pc-chart-bar-stacked">
+                      <!-- 总数标签放在柱形图最顶部 -->
+                      <div class="pc-chart-total" v-if="hour.total > 0">{{ hour.total }}</div>
+                      <div v-for="(count, provider) in hour.by_provider" :key="provider"
+                           v-show="count > 0"
+                           class="pc-chart-bar-segment"
+                           :style="{
+                             height: Math.max((count / (maxHourlyTotal || 1)) * 180, 2) + 'px',
+                             background: getProviderColor(provider)
+                           }"
+                           :title="provider + ': ' + count + ' 次'">
+                        <div :class="(count / (maxHourlyTotal || 1)) * 180 >= 25 ? 'pc-chart-bar-value' : 'pc-chart-bar-value-outside'">{{ count }}</div>
+                      </div>
+                    </div>
+                    <div class="pc-chart-label">{{ hour.displayHour }}</div>
+                  </div>
+                </div>
+                
+                <!-- 图例（放到图形下方） -->
+                <div class="provider-legend" style="margin-top: 15px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;">
+                  <div v-for="(provider, idx) in providerStats.providers" :key="provider.provider"
+                       class="legend-item"
+                       :style="{ background: getProviderColor(provider.provider), opacity: 0.8 }">
+                    {{ provider.provider }}
+                  </div>
+                </div>
+              </div>
+
+              <!-- 手机端：横向条形图（Y轴时间，X轴请求数） -->
+              <div class="hourly-bars-horizontal-stacked" v-show="isMobile">
+                <div v-for="(hour, index) in hourlyStats" :key="index"
+                     class="hourly-bar-row-stacked">
+                  <div class="hourly-bar-label-stacked">{{ hour.displayHour }}</div>
+                  <div class="hourly-bar-container-stacked">
+                    <div class="hourly-bar-stacked">
+                      <div v-for="(count, provider) in hour.by_provider" :key="provider"
+                           class="hourly-bar-segment-stacked"
+                           :style="{
+                             width: Math.max((count / (maxHourlyTotal || 1)) * 100, 0) + '%',
+                             background: getProviderColor(provider),
+                           }"
+                           :title="provider + ': ' + count + ' 次'">
+                      </div>
+                    </div>
+                  </div>
+                  <div class="hourly-bar-total">{{ hour.total }}</div>
+                </div>
+                
+                <!-- 移动端图例（放到图形下方） -->
+                <div class="provider-legend" style="margin-top: 15px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; padding: 10px; background: #f8f9fa; border-radius: 8px;">
+                  <div v-for="(provider, idx) in providerStats.providers" :key="provider.provider"
+                       class="legend-item"
+                       :style="{ background: getProviderColor(provider.provider), opacity: 0.8 }">
+                    {{ provider.provider }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Token 使用统计（按服务商分组） -->
+            <div style="margin-top: 25px;">
+              <h4 style="margin-bottom: 15px; color: #333; font-size: 1.1em;">📊 Token 使用统计</h4>
+              <!-- PC端：横向排列的服务商卡片，每个只显示今日Token -->
+              <div v-show="!isMobile" style="display: flex; flex-wrap: wrap; gap: 15px;">
+                <div v-for="provider in providerStats.providers" :key="provider.provider" 
+                     style="flex: 1; min-width: 140px; max-width: 200px; background: white; border-radius: 10px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-top: 3px solid; text-align: center;"
+                     :style="{ borderTopColor: getProviderColor(provider.provider) }">
+                  <!-- 服务商名称 -->
+                  <div style="font-weight: 600; color: #333; margin-bottom: 8px; font-size: 0.9em;">{{ provider.provider }}</div>
+                  <!-- 今日Token数值 -->
+                  <div style="font-size: 1.4em; font-weight: 700; color: #10b981;">{{ provider.tokens_total?.toLocaleString() || '0' }}</div>
+                  <div style="font-size: 0.75em; color: #999; margin-top: 2px;">今日Token</div>
+                </div>
+              </div>
+              
+              <!-- 移动端：网格展示 -->
+              <div v-show="isMobile" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+                <div v-for="provider in providerStats.providers" :key="provider.provider" 
+                     style="background: white; border-radius: 10px; padding: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-top: 3px solid; text-align: center;"
+                     :style="{ borderTopColor: getProviderColor(provider.provider) }">
+                  <!-- 服务商名称 -->
+                  <div style="font-weight: 600; color: #333; margin-bottom: 6px; font-size: 0.85em;">{{ provider.provider }}</div>
+                  <!-- 今日Token数值 -->
+                  <div style="font-size: 1.2em; font-weight: 700; color: #10b981;">{{ provider.tokens_total?.toLocaleString() || '0' }}</div>
+                  <div style="font-size: 0.7em; color: #999; margin-top: 2px;">今日Token</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 分模型统计 -->
+            <div style="margin-top: 20px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h4 style="color: #333; font-size: 1.1em; margin: 0;">📊 分模型请求统计</h4>
+              </div>
+              <!-- 说明文字 -->
+              <div style="margin-bottom: 15px; padding: 10px 12px; background: #fff8e6; border-left: 3px solid #f59e0b; border-radius: 6px; font-size: 0.8em; color: #666;">
+                💡 <strong>说明</strong>：标记 ℹ️ 内部 的是 OpenClaw 内部模型（如 delivery-mirror），用于响应格式化，不产生实际 Token 消耗。
+              </div>
+              <div v-if="modelStatsDisplay.length === 0" style="text-align: center; padding: 20px; color: #999; background: #f8f9fa; border-radius: 8px;">
+                暂无模型数据（历史数据未记录 model_name，新请求将自动统计）
+              </div>
+              
+              <!-- PC端：按服务商分组展示 -->
+              <div v-else-if="!isMobile">
+                <div v-for="(models, provider) in modelStatsByProvider" :key="provider" style="margin-bottom: 20px;">
+                  <!-- 服务商标题 -->
+                  <div style="display: flex; align-items: center; margin-bottom: 10px; padding: 8px 12px; background: #f0f0f0; border-radius: 8px; border-left: 4px solid;" :style="{ borderLeftColor: getProviderColor(provider) }">
+                    <span style="font-weight: 600; color: #333; font-size: 0.95em;">{{ provider }}</span>
+                    <span style="margin-left: 10px; font-size: 0.8em; color: #666;">({{ models.length }} 个模型)</span>
+                  </div>
+                  <!-- 该服务商下的模型列表 -->
+                  <div style="display: flex; flex-wrap: wrap; gap: 12px; padding-left: 12px;">
+                    <div v-for="(model, idx) in models" :key="idx" 
+                         style="flex: 1; min-width: 160px; max-width: 220px; background: white; padding: 12px; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); border-top: 3px solid; position: relative;"
+                         :style="{ borderTopColor: isInternalModel(model.model) ? '#f59e0b' : getProviderColor(provider) }"
+                         :title="isInternalModel(model.model) ? 'ⓘ OpenClaw 内部模型，不消耗 Token' : ''">
+                      <!-- 内部模型标识 -->
+                      <div v-if="isInternalModel(model.model)" 
+                           style="position: absolute; top: 4px; right: 4px; background: #f59e0b; color: white; font-size: 0.65em; padding: 1px 4px; border-radius: 3px;">
+                        内部
+                      </div>
+                      <!-- 模型名称 -->
+                      <div style="font-size: 0.8em; color: #555; margin-bottom: 8px; padding-right: 35px; font-weight: 500;">{{ model.model }}</div>
+                      <!-- 请求数和Token数 -->
+                      <div style="display: flex; gap: 15px;">
+                        <div style="text-align: center;">
+                          <div style="font-size: 1.1em; font-weight: 700; color: #667eea;">{{ model.count }}</div>
+                          <div style="font-size: 0.7em; color: #999;">请求</div>
+                        </div>
+                        <div style="text-align: center;">
+                          <div style="font-size: 1.1em; font-weight: 700; color: #10b981;">{{ model.tokens?.toLocaleString() || '0' }}</div>
+                          <div style="font-size: 0.7em; color: #999;">Token</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- 移动端：按服务商分组展示 -->
+              <div v-else>
+                <div v-for="(models, provider) in modelStatsByProvider" :key="provider" style="margin-bottom: 15px;">
+                  <!-- 服务商标题 -->
+                  <div style="display: flex; align-items: center; margin-bottom: 8px; padding: 6px 10px; background: #f0f0f0; border-radius: 6px; border-left: 3px solid;" :style="{ borderLeftColor: getProviderColor(provider) }">
+                    <span style="font-weight: 600; color: #333; font-size: 0.9em;">{{ provider }}</span>
+                    <span style="margin-left: 8px; font-size: 0.75em; color: #666;">({{ models.length }})</span>
+                  </div>
+                  <!-- 该服务商下的模型列表 -->
+                  <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; padding-left: 8px;">
+                    <div v-for="(model, idx) in models" :key="idx" 
+                         style="background: white; padding: 10px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border-top: 2px solid; position: relative;"
+                         :style="{ borderTopColor: isInternalModel(model.model) ? '#f59e0b' : getProviderColor(provider) }"
+                         :title="isInternalModel(model.model) ? 'ⓘ 内部模型' : ''">
+                      <!-- 内部模型标识 -->
+                      <div v-if="isInternalModel(model.model)" 
+                           style="position: absolute; top: 2px; right: 2px; background: #f59e0b; color: white; font-size: 0.6em; padding: 1px 3px; border-radius: 2px;">
+                        内部
+                      </div>
+                      <!-- 模型名称 -->
+                      <div style="font-size: 0.75em; color: #555; margin-bottom: 6px; padding-right: 30px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ model.model }}</div>
+                      <!-- 请求数和Token数 -->
+                      <div style="display: flex; gap: 10px;">
+                        <div style="text-align: center; flex: 1;">
+                          <div style="font-size: 1em; font-weight: 700; color: #667eea;">{{ model.count }}</div>
+                          <div style="font-size: 0.65em; color: #999;">请求</div>
+                        </div>
+                        <div style="text-align: center; flex: 1;">
+                          <div style="font-size: 1em; font-weight: 700; color: #10b981;">{{ model.tokens?.toLocaleString() || '0' }}</div>
+                          <div style="font-size: 0.65em; color: #999;">Token</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 使用总计面板 (移到最底部) -->
+        <div class="task-panel" style="margin-top: 20px;">
+          <h3>
+            📊 使用总计
+          </h3>
+          <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 15px; margin-bottom: 15px;">
+            <div class="token-stat-card" style="background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center;">
+              <div style="color: #999; font-size: 0.9em; margin-bottom: 8px;">今日请求总数</div>
+              <div class="token-stat-value" style="font-size: 1.5em; font-weight: bold; color: #667eea;">{{ todayTotalRequests.toLocaleString() }}</div>
+            </div>
+            <div class="token-stat-card" style="background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center;">
+              <div style="color: #999; font-size: 0.9em; margin-bottom: 8px; display: flex; justify-content: center; align-items: center; gap: 4px;">
+                <span>请求预算</span>
+                <button @click="openRequestBudgetEdit" style="background: none; border: none; color: #667eea; cursor: pointer; font-size: 0.8em; padding: 2px 6px; border-radius: 4px;" title="修改预算">✏️</button>
+              </div>
+              <div class="token-stat-value" style="font-size: 1.5em; font-weight: bold; color: #10b981;">{{ dailyRequestBudget.toLocaleString() }}</div>
+            </div>
+            <div class="token-stat-card" style="background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center;">
+              <div style="color: #999; font-size: 0.9em; margin-bottom: 8px;">请求使用率</div>
+              <div class="token-stat-value" style="font-size: 1.5em; font-weight: bold; color: #ef4444;">{{ requestUsagePercent }}%</div>
+            </div>
+            <div class="token-stat-card" style="background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center;">
+              <div style="color: #999; font-size: 0.9em; margin-bottom: 8px;">今日 Token 总数</div>
+              <div class="token-stat-value" style="font-size: 1.5em; font-weight: bold; color: #667eea;">{{ tokenStats.total_used?.toLocaleString() || '0' }}</div>
+            </div>
+            <div class="token-stat-card" style="background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center;">
+              <div style="color: #999; font-size: 0.9em; margin-bottom: 8px; display: flex; justify-content: center; align-items: center; gap: 4px;">
+                <span>Token 预算</span>
+                <button @click="openTokenBudgetEdit" style="background: none; border: none; color: #667eea; cursor: pointer; font-size: 0.8em; padding: 2px 6px; border-radius: 4px;" title="修改预算">✏️</button>
+              </div>
+              <div class="token-stat-value" style="font-size: 1.5em; font-weight: bold; color: #10b981;">{{ (tokenStats.budget.daily || 500000).toLocaleString() }}</div>
+            </div>
+            <div class="token-stat-card" style="background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center;">
+              <div style="color: #999; font-size: 0.9em; margin-bottom: 8px;">Token 使用率</div>
+              <div class="token-stat-value" style="font-size: 1.5em; font-weight: bold; color: #ef4444;">{{ tokenUsagePercent }}%</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 配置按钮和微信二维码容器 -->
+        <div style="margin-top: 20px; display: flex; flex-direction: column; align-items: center;">
+          <!-- 移动端布局：二维码在上，配置按钮在下 -->
+          <div class="wechat-qrcode-mobile">
+            <!-- 微信二维码 -->
+            <div class="qrcode-container-mobile">
+              <img src="qrcode.jpeg" alt="微信二维码" class="qrcode-image-mobile"/>
+            </div>
+          </div>
+
+          <!-- 配置按钮 -->
+          <div class="config-btn-container-mobile">
+            <button @click="openConfigDialog" class="config-btn-mobile">
+              ⚙️ 配置设置
+            </button>
+          </div>
+        </div>
+
+        <!-- 任务移交对话框 -->
+        <div v-if="handoverDialog" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;" @click.self="handoverDialog = false">
+          <div style="background: white; border-radius: 12px; padding: 25px; max-width: 500px; width: 90%; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+            <h3 style="margin-bottom: 20px; color: #333; font-size: 1.3em;">📤 任务移交</h3>
+            
+            <div v-if="selectedTask" style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+              <div style="font-size: 0.9em; color: #666; margin-bottom: 5px;">当前任务</div>
+              <div style="font-weight: 600; color: #333;">{{ selectedTask.task_name }}</div>
+              <div style="font-size: 0.85em; color: #999; margin-top: 5px;">
+                当前执行者：{{ selectedTask.agent_id }}
+              </div>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+              <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">移交给：</label>
+              <select v-model="handoverTarget" style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1em;">
+                <option value="">请选择目标 Agent</option>
+                <option v-for="agent in handoverTargets" :key="agent.agent_id" :value="agent.agent_id">
+                  {{ agent.agent_name }} ({{ agent.status }})
+                </option>
+              </select>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+              <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">移交说明（可选）：</label>
+              <textarea v-model="handoverNote" rows="3" style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 0.95em; resize: vertical;" placeholder="说明移交原因、注意事项等..."></textarea>
+            </div>
+
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+              <button @click="handoverDialog = false" style="padding: 10px 20px; background: #e5e7eb; color: #333; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">取消</button>
+              <button @click="executeHandover" :disabled="!handoverTarget" :style="{ padding: '10px 20px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, opacity: handoverTarget ? 1 : 0.5 }">📤 确认移交</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 预算编辑对话框 -->
+        <div v-if="budgetEditDialog" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;" @click.self="budgetEditDialog = false">
+          <div style="background: white; border-radius: 12px; padding: 25px; max-width: 400px; width: 90%; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+            <h3 style="margin-bottom: 20px; color: #333; font-size: 1.3em;">✏️ 修改 {{ budgetEditType === 'token' ? 'Token' : '请求' }} 预算</h3>
+            
+            <!-- Token 预算编辑 -->
+            <div v-if="budgetEditType === 'token'">
+              <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">日预算 Token：</label>
+                <input 
+                  type="number" 
+                  v-model="newDailyBudget" 
+                  :placeholder="tokenStats.budget.daily || 500000"
+                  style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1em;"
+                  min="1"
+                  step="1"
+                  @input="validatePositiveInteger($event, 'newDailyBudget')"
+                />
+                <div style="font-size: 0.8em; color: #999; margin-top: 5px;">当前：{{ tokenStats.budget.daily?.toLocaleString() || '500,000' }}</div>
+              </div>
+
+              <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">月预算 Token（可选）：</label>
+                <input 
+                  type="number" 
+                  v-model="newMonthlyBudget" 
+                  :placeholder="tokenStats.budget.monthly || 10000000"
+                  style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1em;"
+                  min="1"
+                  step="1"
+                  @input="validatePositiveInteger($event, 'newMonthlyBudget')"
+                />
+                <div style="font-size: 0.8em; color: #999; margin-top: 5px;">当前：{{ tokenStats.budget.monthly?.toLocaleString() || '10,000,000' }}</div>
+              </div>
+            </div>
+            
+            <!-- 请求预算编辑 -->
+            <div v-else>
+              <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">请求预算：</label>
+                <input 
+                  type="number" 
+                  v-model="newDailyRequestBudget" 
+                  :placeholder="dailyRequestBudget"
+                  style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1em;"
+                  min="1"
+                  step="1"
+                  @input="validatePositiveInteger($event, 'newDailyRequestBudget')"
+                />
+                <div style="font-size: 0.8em; color: #999; margin-top: 5px;">当前：{{ dailyRequestBudget.toLocaleString() }}</div>
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+              <button @click="budgetEditDialog = false" style="padding: 10px 20px; background: #e5e7eb; color: #333; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">取消</button>
+              <button @click="saveBudget" style="padding: 10px 20px; background: #10b981; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">💾 保存</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 督促提醒弹窗 -->
+        <div v-if="reminderDialog" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;" @click.self="reminderDialog = false">
+          <div style="background: white; border-radius: 16px; padding: 24px; max-width: 400px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+              <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 20px;">⏰</div>
+              <h3 style="font-size: 18px; font-weight: 700; color: #333;">督促提醒</h3>
+            </div>
+            <div style="background: #f3f4f6; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+              <p style="color: #333; font-size: 15px; line-height: 1.6; white-space: pre-wrap;">{{ reminderMessage }}</p>
+            </div>
+            <div style="display: flex; justify-content: flex-end;">
+              <button @click="reminderDialog = false" style="padding: 10px 24px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px;">确定</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 配置设置弹窗 -->
+        <div v-if="configDialog" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;" @click.self="configDialog = false">
+          <div style="background: white; border-radius: 16px; padding: 24px; max-width: 500px; width: 90%; max-height: 80vh; box-shadow: 0 20px 60px rgba(0,0,0,0.3); display: flex; flex-direction: column;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+              <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 20px;">⚙️</div>
+              <h3 style="font-size: 18px; font-weight: 700; color: #333;">系统配置</h3>
+            </div>
+            
+            <div style="flex: 1; overflow-y: auto; padding-right: 10px; margin-bottom: 20px;">
+              <div style="margin-bottom: 20px;">
+                <h4 style="font-size: 14px; font-weight: 600; color: #333; margin-bottom: 12px;">前端刷新频率设置（单位：秒）</h4>
+                
+                <div style="display: flex; flex-direction: column; gap: 15px;">
+                  <!-- 自动刷新频率 -->
+                  <div>
+                    <label style="display: block; font-size: 13px; color: #666; margin-bottom: 6px;">页面自动刷新</label>
+                    <input 
+                      type="number" 
+                      v-model.number="configForm.auto_refresh" 
+                      min="30" 
+                      max="600" 
+                      step="10"
+                      @input="validateConfigInput($event, 'auto_refresh')"
+                      style="width: 100%; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 14px;"
+                    />
+                    <div style="font-size: 0.8em; color: #999; margin-top: 4px;">范围：30-600秒，当前：{{ configForm.auto_refresh }}秒</div>
+                  </div>
+                  
+                  <!-- 状态数据刷新频率 -->
+                  <div>
+                    <label style="display: block; font-size: 13px; color: #666; margin-bottom: 6px;">状态数据刷新</label>
+                    <input 
+                      type="number" 
+                      v-model.number="configForm.status_data" 
+                      min="30" 
+                      max="600" 
+                      step="10"
+                      @input="validateConfigInput($event, 'status_data')"
+                      style="width: 100%; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 14px;"
+                    />
+                    <div style="font-size: 0.8em; color: #999; margin-top: 4px;">范围：30-600秒，当前：{{ configForm.status_data }}秒</div>
+                  </div>
+                  
+                  <!-- 统计数据刷新频率 -->
+                  <div>
+                    <label style="display: block; font-size: 13px; color: #666; margin-bottom: 6px;">统计数据刷新</label>
+                    <input 
+                      type="number" 
+                      v-model.number="configForm.stats_data" 
+                      min="30" 
+                      max="600" 
+                      step="10"
+                      @input="validateConfigInput($event, 'stats_data')"
+                      style="width: 100%; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 14px;"
+                    />
+                    <div style="font-size: 0.8em; color: #999; margin-top: 4px;">范围：30-600秒，当前：{{ configForm.stats_data }}秒</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div style="margin-bottom: 20px;">
+                <h4 style="font-size: 14px; font-weight: 600; color: #333; margin-bottom: 12px;">后端同步频率设置（单位：分钟）</h4>
+                
+                <div style="display: flex; flex-direction: column; gap: 15px;">
+                  <!-- Agent 状态同步频率 -->
+                  <div>
+                    <label style="display: block; font-size: 13px; color: #666; margin-bottom: 6px;">Agent 状态同步</label>
+                    <input 
+                      type="number" 
+                      v-model.number="configForm.agent_sync" 
+                      min="1" 
+                      max="120" 
+                      step="1"
+                      @input="validateBackendConfigInput($event, 'agent_sync')"
+                      style="width: 100%; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 14px;"
+                    />
+                    <div style="font-size: 0.8em; color: #999; margin-top: 4px;">范围：1-120分钟，当前：{{ configForm.agent_sync }}分钟</div>
+                  </div>
+                  
+                  <!-- 任务数据同步频率 -->
+                  <div>
+                    <label style="display: block; font-size: 13px; color: #666; margin-bottom: 6px;">任务数据同步</label>
+                    <input 
+                      type="number" 
+                      v-model.number="configForm.task_sync" 
+                      min="1" 
+                      max="120" 
+                      step="1"
+                      @input="validateBackendConfigInput($event, 'task_sync')"
+                      style="width: 100%; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 14px;"
+                    />
+                    <div style="font-size: 0.8em; color: #999; margin-top: 4px;">范围：1-120分钟，当前：{{ configForm.task_sync }}分钟</div>
+                  </div>
+                  
+                  <!-- 请求日志同步频率 -->
+                  <div>
+                    <label style="display: block; font-size: 13px; color: #666; margin-bottom: 6px;">请求日志同步</label>
+                    <input 
+                      type="number" 
+                      v-model.number="configForm.request_sync" 
+                      min="1" 
+                      max="120" 
+                      step="1"
+                      @input="validateBackendConfigInput($event, 'request_sync')"
+                      style="width: 100%; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 14px;"
+                    />
+                    <div style="font-size: 0.8em; color: #999; margin-top: 4px;">范围：1-120分钟，当前：{{ configForm.request_sync }}分钟</div>
+                  </div>
+                  
+                  <!-- Cron 任务同步频率 -->
+                  <div>
+                    <label style="display: block; font-size: 13px; color: #666; margin-bottom: 6px;">Cron 任务同步</label>
+                    <input 
+                      type="number" 
+                      v-model.number="configForm.cron_sync" 
+                      min="1" 
+                      max="120" 
+                      step="1"
+                      @input="validateBackendConfigInput($event, 'cron_sync')"
+                      style="width: 100%; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 14px;"
+                    />
+                    <div style="font-size: 0.8em; color: #999; margin-top: 4px;">范围：1-120分钟，当前：{{ configForm.cron_sync }}分钟</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+              <button @click="configDialog = false" style="padding: 10px 20px; background: #e5e7eb; color: #333; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">取消</button>
+              <button @click="saveConfig" style="padding: 10px 20px; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">提交</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { createApp } = Vue
+
+    createApp({
+      data() {
+        return {
+          agents: [],
+          tasks: {
+            in_progress: [],
+            pending: [],
+            blocked: [],
+            completed_today: []
+          },
+          tokenStats: {
+            total_used: 0,
+            by_agent: [],
+            budget: {}
+          },
+          // 请求预算相关
+          requestBudget: {
+            daily: 600
+          },
+          agentTasks: {},
+          requestStats: {
+            hourly: [],
+            total_requests: 0,
+            total_tokens: 0,
+            peak_hour: '',
+            peak_count: 0
+          },
+          providerStats: {
+            providers: [],
+            models: []
+          },
+          // 任务移交相关
+          selectedTask: null,
+          handoverDialog: false,
+          handoverTarget: '',
+          handoverNote: '',
+          // 预算编辑相关
+          budgetEditDialog: false,
+          newDailyBudget: null,
+          newMonthlyBudget: null,
+          newDailyRequestBudget: null,
+          budgetEditType: 'token', // 'token' 或 'request'
+          // 督促提醒相关
+          reminderDialog: false,
+          reminderMessage: '',
+          reminders: [],
+          loading: true,
+          error: null,
+          lastUpdate: '',
+          wsConnected: false,
+          ws: null,
+          // WebSocket 重连控制
+          wsReconnectAttempts: 0,
+          wsMaxReconnectAttempts: 10,
+          // 窗口信息
+          window: {
+            location: {
+              hostname: window.location.hostname,
+              port: window.location.port
+            }
+          },
+          // 响应式布局
+          isMobile: window.innerWidth <= 768,
+          // 配置相关
+          configDialog: false,
+          configForm: {
+            auto_refresh: 300,
+            status_data: 300,
+            stats_data: 300,
+            // 后端同步频率（单位：分钟）
+            agent_sync: 5,
+            task_sync: 10,
+            request_sync: 15,
+            cron_sync: 90
+          }
+        }
+      },
+      computed: {
+        idleAgents() {
+          return this.agents.filter(a => a.status === 'idle')
+        },
+        conversingAgents() {
+          return this.agents.filter(a => a.status === 'conversing')
+        },
+        workingAgents() {
+          return this.agents.filter(a => a.status === 'working')
+        },
+        idleCount() {
+          return this.idleAgents.length
+        },
+        conversingCount() {
+          return this.conversingAgents.length
+        },
+        workingCount() {
+          return this.workingAgents.length
+        },
+        // 计算请求统计
+        requestStatsDisplay() {
+          if (!this.requestStats.hourly || this.requestStats.hourly.length === 0) {
+            return {
+              total_requests: 0,
+              total_tokens: 0,
+              peak_hour: '-',
+              peak_count: 0,
+              hourly: []
+            }
+          }
+          
+          // 计算总数
+          const total_requests = this.requestStats.hourly.reduce((sum, h) => sum + h.count, 0)
+          const total_tokens = this.requestStats.hourly.reduce((sum, h) => sum + (h.tokens || 0), 0)
+          
+          // 找出高峰时段
+          const peak = this.requestStats.hourly.reduce((max, h) => h.count > max.count ? h : max, { hour: 0, count: 0 })
+          
+          return {
+            total_requests,
+            total_tokens,
+            peak_hour: peak.count > 0 ? `${String(peak.hour).padStart(2, '0')}:00` : '-',
+            peak_count: peak.count,
+            hourly: this.requestStats.hourly
+          }
+        },
+        // 获取服务商名称
+        providerName() {
+          if (this.providerStats.providers && this.providerStats.providers.length > 0) {
+            return this.providerStats.providers[0].provider
+          }
+          return 'bailian'
+        },
+        // 计算每小时统计数据
+        hourlyStats() {
+          // 转换数据格式，确保每个小时都有数据
+          const hourlyMap = new Map()
+          if (this.requestStats && this.requestStats.hourly) {
+            this.requestStats.hourly.forEach(item => {
+              hourlyMap.set(item.hour, item)
+            })
+          }
+          
+          // 生成24小时数据，确保每个小时都有数据，按1-24排序
+          const result = []
+          for (let i = 0; i < 24; i++) {
+            const hourData = hourlyMap.get(i) || {
+              hour: i,
+              count: 0,
+              tokens: 0,
+              by_provider: {}
+            }
+            
+            // 构建按服务商分组的数据 - 只包含有数据的服务商
+            const by_provider = {}
+            
+            // 从hourData.by_provider中提取所有服务商（只包含有数据的）
+            if (hourData.by_provider) {
+              Object.keys(hourData.by_provider).forEach(provider => {
+                const count = hourData.by_provider[provider]
+                if (count > 0) {
+                  by_provider[provider] = count
+                }
+              })
+            }
+            
+            result.push({
+              hour: i,
+              displayHour: i === 23 ? 24 : i + 1,
+              total: Object.values(by_provider).reduce((sum, count) => sum + count, 0),
+              by_provider
+            })
+          }
+          
+          // 按displayHour排序（1-24）
+          result.sort((a, b) => a.displayHour - b.displayHour)
+          
+          return result
+        },
+        // 计算每小时最大请求总数（用于柱状图比例）
+        maxHourlyTotal() {
+          // 直接从requestStats计算，避免循环引用
+          if (!this.requestStats || !this.requestStats.hourly || this.requestStats.hourly.length === 0) return 1
+          
+          // 计算每小时的总请求数
+          const hourlyTotals = []
+          for (let i = 0; i < 24; i++) {
+            const hourData = this.requestStats.hourly.find(item => item.hour === i)
+            if (hourData && hourData.by_provider) {
+              const total = Object.values(hourData.by_provider).reduce((sum, count) => sum + count, 0)
+              hourlyTotals.push(total)
+            } else {
+              hourlyTotals.push(0)
+            }
+          }
+          
+          const max = Math.max(...hourlyTotals)
+          return max > 0 ? max : 1
+        },
+        // 模型统计显示（显示所有模型，包括内部模型）
+        modelStatsDisplay() {
+          if (!this.providerStats.models || !Array.isArray(this.providerStats.models) || this.providerStats.models.length === 0) {
+            return []
+          }
+          // 显示所有模型，包括 OpenClaw 内部模型
+          return this.providerStats.models
+        },
+        // 按服务商分组的模型统计
+        modelStatsByProvider() {
+          const models = this.modelStatsDisplay
+          if (!models.length) return {}
+          
+          const grouped = {}
+          models.forEach(model => {
+            const provider = this.getProviderFromModel(model.model)
+            if (!grouped[provider]) {
+              grouped[provider] = []
+            }
+            grouped[provider].push(model)
+          })
+          return grouped
+        },
+        // 可选的移交目标 Agent 列表
+        handoverTargets() {
+          return this.agents.filter(a => a.agent_id !== this.selectedTask?.agent_id)
+        },
+        // 判断是否支持 Token 统计
+        tokenStatsSupport() {
+          // 检查模型数据是否有 tokens 字段
+          if (!this.providerStats.models || !Array.isArray(this.providerStats.models) || this.providerStats.models.length === 0) {
+            return 'unknown'
+          }
+          
+          const models = this.providerStats.models
+          // 检查第一个模型是否有 tokens 数据
+          const firstModel = models[0]
+          if (firstModel.tokens !== undefined && firstModel.tokens !== null) {
+            // 如果有 tokens 且大于 0，说明支持
+            return true
+          } else if (firstModel.tokens === 0 || firstModel.tokens === null) {
+            // tokens 为 0 或 null，需要进一步判断
+            // 如果有请求数但没有 tokens，说明不支持
+            if (firstModel.count > 0) {
+              return false
+            }
+            return 'unknown'
+          }
+          return false
+        },
+        // 获取主要模型名称
+        primaryModelName() {
+          if (!this.modelStatsDisplay.length) {
+            return '大模型'
+          }
+          const models = this.modelStatsDisplay
+          // 返回第一个模型名称，如果没有则返回默认值
+          return models[0].model || '大模型'
+        },
+        // 计算今日请求总数
+        todayTotalRequests() {
+          if (!this.providerStats.providers || this.providerStats.providers.length === 0) {
+            return 0
+          }
+          return this.providerStats.providers.reduce((sum, provider) => sum + (provider.request_count || 0), 0)
+        },
+        // 日请求预算（使用本地存储或默认值）
+        dailyRequestBudget() {
+          // 尝试从 localStorage 读取，如果没有则使用默认值 600
+          const stored = localStorage.getItem('dailyRequestBudget')
+          return stored ? parseInt(stored) : 600
+        },
+        // 请求使用率
+        requestUsagePercent() {
+          const budget = this.dailyRequestBudget
+          const used = this.todayTotalRequests
+          if (budget <= 0) return 0
+          return Math.min(100, ((used / budget) * 100).toFixed(1))
+        },
+        // Token 使用率
+        tokenUsagePercent() {
+          const budget = this.tokenStats.budget.daily || 500000
+          const used = this.tokenStats.total_used || 0
+          if (budget <= 0) return 0
+          return Math.min(100, ((used / budget) * 100).toFixed(1))
+        },
+        // 模型到服务商的映射
+        modelToProvider() {
+          return {
+            // bailian 百炼
+            'qwen3.5-plus': 'bailian',
+            'qwen3.5-turbo': 'bailian',
+            'qwen3.5-14b': 'bailian',
+            'qwen3.5-32b': 'bailian',
+            'qwen3.5-72b': 'bailian',
+            'qwen3.5-110b': 'bailian',
+            'qwen-max': 'bailian',
+            'qwen-plus': 'bailian',
+            'qwen-turbo': 'bailian',
+            
+            // volcengine 火山引擎
+            'ark-code-latest': 'volcengine',
+            'doubao-seed-2.0-code': 'volcengine',
+            'doubao-seed-2.0-pro': 'volcengine',
+            'doubao-seed-2.0-lite': 'volcengine',
+            'doubao-seed-code': 'volcengine',
+            
+            // OpenClaw 内部模型
+            'delivery-mirror': 'openclaw',
+            
+            // Moonshot
+            'kimi-k2.5': 'moonshot',
+            'kimi-k2': 'moonshot',
+            'kimi-k1.5': 'moonshot',
+            
+            // Zhipu 智谱
+            'glm-5': 'zhipu',
+            'glm-4': 'zhipu',
+            'glm-4v': 'zhipu',
+            'glm-3-turbo': 'zhipu',
+            'glm-4.7': 'zhipu',
+            
+            // MiniMax
+            'MiniMax-M2.5': 'minimax',
+            'MiniMax-M2': 'minimax',
+            'minimax-m2.5': 'minimax',
+            
+            // OpenAI
+            'gpt-4': 'openai',
+            'gpt-4o': 'openai',
+            'gpt-4o-mini': 'openai',
+            'gpt-3.5-turbo': 'openai',
+            
+            // Anthropic
+            'claude-3-opus': 'anthropic',
+            'claude-3-sonnet': 'anthropic',
+            'claude-3-haiku': 'anthropic',
+            'claude-3.5-sonnet': 'anthropic',
+            
+            // 其他
+            'deepseek-v3.2': 'volcengine',
+            'delivery-mirror': 'openclaw'
+          }
+        },
+        // 服务商颜色映射 - 协调的配色方案
+        providerColors() {
+          return {
+            'bailian': '#6366f1',      // 靛蓝
+            'volcengine': '#10b981',   // 翠绿
+            'volcengine-plan': '#059669', // 深翠绿
+            'openai': '#f59e0b',       // 琥珀
+            'anthropic': '#ec4899',    // 粉红
+            'google': '#8b5cf6',       // 紫罗兰
+            'deepseek': '#3b82f6',     // 蓝色
+            'qwen': '#6366f1',         // 靛蓝
+            'doubao': '#10b981',       // 翠绿
+            'claude': '#ec4899',       // 粉红
+            'gpt': '#f59e0b',          // 琥珀
+            'moonshot': '#a855f7',     // 紫色
+            'zhipu': '#f97316',        // 橙色
+            'minimax': '#06b6d4',      // 青色
+            'openclaw': '#64748b',     // 石板灰
+            'unknown': '#9ca3af'       // 灰色
+          }
+        }
+      },
+      methods: {
+        // 获取服务商渐变背景
+        getProviderGradient(provider) {
+          const color = this.getProviderColor(provider)
+          if (!color || typeof color !== 'string') {
+            return 'linear-gradient(135deg, #667eea 0%, rgba(102,126,234,0.1) 100%)'
+          }
+          // 生成浅色渐变
+          const hex = color.replace('#', '')
+          const r = parseInt(hex.substr(0, 2), 16)
+          const g = parseInt(hex.substr(2, 2), 16)
+          const b = parseInt(hex.substr(4, 2), 16)
+          return `linear-gradient(135deg, ${color} 0%, rgba(${r},${g},${b},0.1) 100%)`
+        },
+        // 获取服务商颜色
+        getProviderColor(provider) {
+          if (!provider || typeof provider !== 'string') {
+            return '#667eea' // 默认颜色
+          }
+          // 直接使用服务商名称查找颜色
+          const providerColors = this.providerColors
+          if (providerColors[provider]) {
+            return providerColors[provider]
+          }
+          // hash 生成颜色
+          let hash = 0
+          for (let i = 0; i < provider.length; i++) {
+            hash = provider.charCodeAt(i) + ((hash << 5) - hash)
+          }
+          const h = hash % 360
+          return `hsl(${h}, 70%, 50%)`
+        },
+        // 从模型名称提取服务商
+        getProviderFromModel(modelName) {
+          const modelToProviderMap = this.modelToProvider
+          if (modelToProviderMap[modelName]) {
+            return modelToProviderMap[modelName]
+          }
+          if (modelName.includes('/')) {
+            return modelName.split('/')[0]
+          }
+          return 'unknown'
+        },
+        // 计算 Token 使用率百分比
+        getTokenUsagePercent(tokens) {
+          const budget = this.getTokenBudgetDaily()
+          if (!budget || budget <= 0) return 0
+          return Math.round((tokens / budget) * 100)
+        },
+        // 获取日 Token 预算
+        getTokenBudgetDaily() {
+          // 从 config 读取，默认 500000
+          return window.LOBSTER_CONFIG?.token_budget?.daily || 500000
+        },
+        // 判断是否是内部模型
+        isInternalModel(modelName) {
+          const internalModels = ['delivery-mirror', 'response-mirror']
+          return internalModels.includes(modelName)
+        },
+        async fetchData() {
+          try {
+            this.loading = true
+            this.error = null
+
+            console.log('🔧 开始加载数据...')
+            
+            // 检查配置是否加载
+            if (!window.LOBSTER_CONFIG) {
+              throw new Error('配置文件未加载')
+            }
+            
+            const API = window.LOBSTER_CONFIG;
+            console.log('🔧 配置信息:', {
+              API_BASE: API.API_BASE,
+              WS_URL: API.WS_URL,
+              BACKEND_PORT: API.BACKEND_PORT
+            })
+            
+            // 测试配置有效性
+            const validationErrors = API.validate();
+            if (validationErrors) {
+              throw new Error('配置验证失败: ' + validationErrors.join(', '))
+            }
+            
+            // 获取 Agent 状态
+            console.log('📡 开始获取 Agent 状态...')
+            const agentsUrl = API.getApiUrl('/agents/status');
+            console.log('📡 Agent 状态 URL:', agentsUrl)
+            const agentsRes = await fetch(agentsUrl)
+            console.log('📡 Agent 状态响应状态:', agentsRes.status)
+            if (!agentsRes.ok) throw new Error(`Agent 状态 API 错误：${agentsRes.status}`)
+            const agentsData = await agentsRes.json()
+            console.log('📡 Agent 状态响应数据:', agentsData)
+            this.agents = agentsData.agents || []
+            console.log('✅ Agent 状态获取成功:', this.agents.length, '个 Agent')
+
+            // 获取任务队列
+            console.log('📡 开始获取任务队列...')
+            const tasksUrl = API.getApiUrl('/tasks');
+            console.log('📡 任务队列 URL:', tasksUrl)
+            const tasksRes = await fetch(tasksUrl)
+            console.log('📡 任务队列响应状态:', tasksRes.status)
+            if (!tasksRes.ok) throw new Error(`任务 API 错误：${tasksRes.status}`)
+            this.tasks = await tasksRes.json()
+            console.log('📡 任务队列响应数据:', this.tasks)
+            console.log('✅ 任务队列获取成功')
+
+            // 获取 Token 统计
+            console.log('📡 开始获取 Token 统计...')
+            const tokenUrl = API.getApiUrl('/tokens/stats?period=today');
+            console.log('📡 Token 统计 URL:', tokenUrl)
+            const tokenRes = await fetch(tokenUrl)
+            console.log('📡 Token 统计响应状态:', tokenRes.status)
+            if (!tokenRes.ok) throw new Error(`Token 统计 API 错误：${tokenRes.status}`)
+            this.tokenStats = await tokenRes.json()
+            console.log('📡 Token 统计响应数据:', this.tokenStats)
+            console.log('✅ Token 统计获取成功')
+
+            // 获取 Agent 今日任务清单
+            console.log('📡 开始获取 Agent 今日任务清单...')
+            const agentTasksUrl = API.getApiUrl('/agents/tasks');
+            console.log('📡 Agent 今日任务清单 URL:', agentTasksUrl)
+            const agentTasksRes = await fetch(agentTasksUrl)
+            console.log('📡 Agent 今日任务清单响应状态:', agentTasksRes.status)
+            if (!agentTasksRes.ok) throw new Error(`任务清单 API 错误：${agentTasksRes.status}`)
+            this.agentTasks = await agentTasksRes.json()
+            console.log('📡 Agent 今日任务清单响应数据:', this.agentTasks)
+            console.log('✅ Agent 今日任务清单获取成功')
+
+            // 获取请求速率统计
+            console.log('📡 开始获取请求速率统计...')
+            const requestStatsUrl = API.getApiUrl('/requests/stats?period=daily');
+            console.log('📡 请求速率统计 URL:', requestStatsUrl)
+            const requestStatsRes = await fetch(requestStatsUrl)
+            console.log('📡 请求速率统计响应状态:', requestStatsRes.status)
+            if (!requestStatsRes.ok) throw new Error(`请求统计 API 错误：${requestStatsRes.status}`)
+            this.requestStats = await requestStatsRes.json()
+            console.log('📡 请求速率统计响应数据:', this.requestStats)
+            console.log('✅ 请求速率统计获取成功')
+
+            // 获取服务商统计
+            console.log('📡 开始获取服务商统计...')
+            const providerStatsUrl = API.getApiUrl('/requests/providers');
+            console.log('📡 服务商统计 URL:', providerStatsUrl)
+            const providerStatsRes = await fetch(providerStatsUrl)
+            console.log('📡 服务商统计响应状态:', providerStatsRes.status)
+            if (!providerStatsRes.ok) throw new Error(`服务商统计 API 错误：${providerStatsRes.status}`)
+            const providerStatsData = await providerStatsRes.json()
+            console.log('📡 服务商统计响应数据:', providerStatsData)
+            console.log('✅ 服务商统计获取成功')
+            
+            // 获取模型统计
+            console.log('📡 开始获取模型统计...')
+            const modelStatsUrl = API.getApiUrl('/requests/models');
+            console.log('📡 模型统计 URL:', modelStatsUrl)
+            const modelStatsRes = await fetch(modelStatsUrl)
+            console.log('📡 模型统计响应状态:', modelStatsRes.status)
+            if (!modelStatsRes.ok) throw new Error(`模型统计 API 错误：${modelStatsRes.status}`)
+            const modelStatsData = await modelStatsRes.json()
+            console.log('📡 模型统计响应数据:', modelStatsData)
+            console.log('✅ 模型统计获取成功')
+            
+            // 合并数据到 providerStats，保持响应式
+            console.log('🔄 开始合并数据...')
+            this.providerStats = {
+              ...providerStatsData,
+              models: modelStatsData.models || []
+            }
+            console.log('📡 合并后的数据:', this.providerStats)
+
+            // 只显示到分钟，不显示秒
+            const now = new Date()
+            this.lastUpdate = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+            console.log('✅ 所有数据加载完成')
+            console.log('📊 加载的数据:', {
+              agents: this.agents.length,
+              tasks: Object.keys(this.tasks).length,
+              tokenStats: this.tokenStats ? '有数据' : '无数据',
+              agentTasks: Object.keys(this.agentTasks).length,
+              requestStats: this.requestStats ? '有数据' : '无数据',
+              providerStats: this.providerStats ? '有数据' : '无数据'
+            })
+          } catch (err) {
+            console.error('❌ 数据加载失败:', err)
+            console.error('❌ 错误堆栈:', err.stack)
+            this.error = '数据加载失败：' + err.message
+          } finally {
+            this.loading = false
+            console.log('🔄 加载状态已重置')
+          }
+        },
+
+        connectWebSocket() {
+          try {
+            // 检查配置是否加载
+            if (!window.LOBSTER_CONFIG) {
+              console.error('❌ 配置文件未加载，无法连接 WebSocket')
+              return
+            }
+            
+            const API = window.LOBSTER_CONFIG;
+            const WS_URL = API.WS_URL;
+            
+            console.log('🔌 尝试连接 WebSocket:', WS_URL)
+            this.ws = new WebSocket(WS_URL)
+
+            this.ws.onopen = () => {
+              console.log('✅ WebSocket 已连接')
+              this.wsConnected = true
+              this.wsReconnectAttempts = 0  // 重置重连计数
+              
+              // 订阅所有 Agent
+              try {
+                this.ws.send(JSON.stringify({
+                  type: 'subscribe',
+                  agents: []  // 空表示订阅所有
+                }))
+                console.log('📡 已订阅所有 Agent')
+              } catch (err) {
+                console.error('❌ 发送订阅消息失败:', err)
+              }
+            }
+
+            this.ws.onmessage = (event) => {
+              try {
+                const message = JSON.parse(event.data)
+                // console.log('📨 收到消息:', message)
+
+                if (message.type === 'agent_update') {
+                  // 更新 Agent 状态
+                  const index = this.agents.findIndex(a => a.agent_id === message.data.agent_id)
+                  if (index !== -1) {
+                    this.agents[index] = message.data
+                  }
+                } else if (message.type === 'reminder') {
+                  // 显示督促通知
+                  this.showReminder(message.data)
+                } else if (message.type === 'subscribed') {
+                  console.log('✅ WebSocket 订阅成功')
+                }
+              } catch (err) {
+                console.error('❌ 处理 WebSocket 消息失败:', err)
+              }
+            }
+
+            this.ws.onclose = () => {
+              console.log('❌ WebSocket 已断开')
+              this.wsConnected = false
+              
+              // 5 秒后尝试重连（不限制次数，因为可能是网络波动）
+              console.log('🔄 5 秒后尝试重连...')
+              setTimeout(() => this.connectWebSocket(), 5000)
+            }
+
+            this.ws.onerror = (error) => {
+              console.error('❌ WebSocket 错误:', error)
+              // 不在这里显示错误，由 onclose 处理
+            }
+          } catch (err) {
+            console.error('❌ WebSocket 连接初始化失败:', err)
+          }
+        },
+
+        showReminder(data) {
+          // 显示督促弹窗
+          this.reminderMessage = `[督促] ${data.agent_id}: ${data.reason || data.message}`
+          this.reminderDialog = true
+        },
+
+        openHandoverDialog(task, agentId) {
+          this.selectedTask = { ...task, agent_id: agentId }
+          this.handoverTarget = ''
+          this.handoverNote = ''
+          this.handoverDialog = true
+        },
+
+        async executeHandover() {
+          if (!this.handoverTarget || !this.selectedTask) return
+
+          try {
+            if (!window.LOBSTER_CONFIG) {
+              throw new Error('配置文件未加载')
+            }
+            
+            const API = window.LOBSTER_CONFIG;
+            const url = API.getApiUrl('/handovers');
+            
+            const res = await fetch(url, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                from_agent_id: this.selectedTask.agent_id,
+                to_agent_id: this.handoverTarget,
+                task_id: this.selectedTask.task_id,
+                task_name: this.selectedTask.task_name,
+                handover_type: 'full',
+                note: this.handoverNote
+              })
+            })
+            const result = await res.json()
+            if (result.success) {
+              alert(`✅ 任务已成功移交给 ${this.handoverTarget}\n\n任务：${this.selectedTask.task_name}`)
+              this.handoverDialog = false
+              this.selectedTask = null
+              this.fetchData()  // 刷新数据
+            } else {
+              alert(`❌ 移交失败：${result.error}`)
+            }
+          } catch (err) {
+            alert(`❌ 移交失败：${err.message}`)
+          }
+        },
+
+        async sendReminder(agentId) {
+          // 手动发送督促
+          try {
+            if (!window.LOBSTER_CONFIG) {
+              throw new Error('配置文件未加载')
+            }
+            
+            const API = window.LOBSTER_CONFIG;
+            const url = API.getApiUrl(`/reminders/send?agent_id=${agentId}&interval=10`);
+            
+            const res = await fetch(url, {
+              method: 'POST'
+            })
+            const result = await res.json()
+            if (result.success) {
+              if (result.feishu_result && result.feishu_result.status === 'skipped') {
+                alert(`⚠️ 飞书通知未配置\n\n督促记录已保存给 ${agentId}，但未发送飞书消息。\n如需启用飞书通知，请配置 FEISHU_WEBHOOK_URL 环境变量。`)
+              } else {
+                alert(`✅ 已发送督促给 ${agentId}`)
+              }
+            } else {
+              alert(`❌ 发送失败：${result.error}`)
+            }
+          } catch (err) {
+            alert(`❌ 发送失败：${err.message}`)
+          }
+        },
+        formatTime(isoString) {
+          if (!isoString) return '-'
+          // 直接解析 ISO 字符串，不进行时区转换（后端已返回北京时间）
+          // 格式：2026-03-27T12:31:10.329222+08:00
+          // 显示：03-27 12:31（北京时间）
+          const dateStr = isoString.split('T')[0]  // 2026-03-27
+          const timeStr = isoString.split('T')[1]  // 12:31:10.329222+08:00
+          const timePart = timeStr.substring(0, 5)  // 12:31
+          
+          const [year, month, day] = dateStr.split('-')
+          return `${month}-${day} ${timePart}`
+        },
+        formatDuration(seconds) {
+          if (seconds === null || seconds === undefined || isNaN(seconds)) {
+            return '-'
+          }
+          const h = Math.floor(seconds / 3600)
+          const m = Math.floor((seconds % 3600) / 60)
+          const s = Math.floor(seconds % 60)
+          if (h > 0) return `${h}h ${m}m`
+          if (m > 0) return `${m}m ${s}s`
+          return `${s}s`
+        },
+        formatDate(isoString) {
+          if (!isoString) return ''
+          const date = new Date(isoString)
+          return date.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+        },
+        // 打开 Token 预算编辑对话框
+        openTokenBudgetEdit() {
+          this.newDailyBudget = null
+          this.newMonthlyBudget = null
+          this.budgetEditType = 'token'
+          this.budgetEditDialog = true
+        },
+        // 打开请求预算编辑对话框
+        openRequestBudgetEdit() {
+          this.newDailyRequestBudget = null
+          this.budgetEditType = 'request'
+          this.budgetEditDialog = true
+        },
+        // 验证正整数输入
+        validatePositiveInteger(event, field) {
+          let value = event.target.value
+          // 移除非数字字符
+          value = value.replace(/[^0-9]/g, '')
+          // 转换为整数
+          let num = parseInt(value, 10)
+          // 确保是正整数
+          if (isNaN(num) || num < 1) {
+            num = 1
+          }
+          // 更新对应字段
+          this[field] = num
+          // 更新输入框显示
+          event.target.value = num
+        },
+        // 保存预算配置
+        async saveBudget() {
+          try {
+            if (this.budgetEditType === 'token') {
+              // 保存 Token 预算
+              if (!window.LOBSTER_CONFIG) {
+                throw new Error('配置文件未加载')
+              }
+              
+              const API = window.LOBSTER_CONFIG;
+              const url = API.getApiUrl('/tokens/budget');
+              
+              const payload = {}
+              if (this.newDailyBudget !== null && this.newDailyBudget !== '') {
+                payload.daily = parseInt(this.newDailyBudget)
+              }
+              if (this.newMonthlyBudget !== null && this.newMonthlyBudget !== '') {
+                payload.monthly = parseInt(this.newMonthlyBudget)
+              }
+              
+              if (Object.keys(payload).length === 0) {
+                this.budgetEditDialog = false
+                return
+              }
+              
+              const res = await fetch(url, {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+              })
+              
+              const result = await res.json()
+              
+              if (result.success) {
+                await this.fetchData()
+                this.budgetEditDialog = false
+                alert(`✅ Token 预算已更新\n\n日预算：${result.budget.daily.toLocaleString()}\n月预算：${result.budget.monthly.toLocaleString()}`)
+              } else {
+                alert(`❌ 保存失败：${result.error}`)
+              }
+            } else {
+              // 保存请求预算（使用 localStorage）
+              if (this.newDailyRequestBudget !== null && this.newDailyRequestBudget !== '') {
+                localStorage.setItem('dailyRequestBudget', parseInt(this.newDailyRequestBudget))
+                this.budgetEditDialog = false
+                alert(`✅ 请求预算已更新\n\n日预算：${parseInt(this.newDailyRequestBudget).toLocaleString()}`)
+              } else {
+                this.budgetEditDialog = false
+              }
+            }
+          } catch (err) {
+            alert(`❌ 保存失败：${err.message}`)
+          }
+        },
+        // 打开配置对话框
+        openConfigDialog() {
+          // 从配置文件或默认值加载当前设置
+          this.configForm = {
+            auto_refresh: window.LOBSTER_CONFIG?.refresh?.auto_refresh || 300,
+            status_data: window.LOBSTER_CONFIG?.refresh?.status_data || 300,
+            stats_data: window.LOBSTER_CONFIG?.refresh?.stats_data || 300,
+            // 后端同步频率
+            agent_sync: window.LOBSTER_CONFIG?.refresh?.agent_sync || 5,
+            task_sync: window.LOBSTER_CONFIG?.refresh?.task_sync || 10,
+            request_sync: window.LOBSTER_CONFIG?.refresh?.request_sync || 15,
+            cron_sync: window.LOBSTER_CONFIG?.refresh?.cron_sync || 90
+          }
+          this.configDialog = true
+        },
+        // 验证前端配置输入（秒）
+        validateConfigInput(event, field) {
+          let value = event.target.value
+          // 移除非数字字符
+          value = value.replace(/[^0-9]/g, '')
+          // 转换为整数
+          let num = parseInt(value, 10)
+          // 确保在有效范围内
+          if (isNaN(num) || num < 30) {
+            num = 30
+          } else if (num > 600) {
+            num = 600
+          }
+          // 更新对应字段
+          this.configForm[field] = num
+          // 更新输入框显示
+          event.target.value = num
+        },
+        // 验证后端配置输入（分钟）
+        validateBackendConfigInput(event, field) {
+          let value = event.target.value
+          // 移除非数字字符
+          value = value.replace(/[^0-9]/g, '')
+          // 转换为整数
+          let num = parseInt(value, 10)
+          // 确保在有效范围内
+          if (isNaN(num) || num < 1) {
+            num = 1
+          } else if (num > 120) {
+            num = 120
+          }
+          // 更新对应字段
+          this.configForm[field] = num
+          // 更新输入框显示
+          event.target.value = num
+        },
+        // 保存配置
+        async saveConfig() {
+          try {
+            // 验证配置
+            const errors = []
+            // 验证前端配置
+            if (this.configForm.auto_refresh < 30 || this.configForm.auto_refresh > 600) {
+              errors.push('自动刷新频率必须在30-600秒之间')
+            }
+            if (this.configForm.status_data < 30 || this.configForm.status_data > 600) {
+              errors.push('状态数据刷新频率必须在30-600秒之间')
+            }
+            if (this.configForm.stats_data < 30 || this.configForm.stats_data > 600) {
+              errors.push('统计数据刷新频率必须在30-600秒之间')
+            }
+            // 验证后端配置
+            if (this.configForm.agent_sync < 1 || this.configForm.agent_sync > 120) {
+              errors.push('Agent 状态同步频率必须在1-120分钟之间')
+            }
+            if (this.configForm.task_sync < 1 || this.configForm.task_sync > 120) {
+              errors.push('任务数据同步频率必须在1-120分钟之间')
+            }
+            if (this.configForm.request_sync < 1 || this.configForm.request_sync > 120) {
+              errors.push('请求日志同步频率必须在1-120分钟之间')
+            }
+            if (this.configForm.cron_sync < 1 || this.configForm.cron_sync > 120) {
+              errors.push('Cron 任务同步频率必须在1-120分钟之间')
+            }
+            
+            if (errors.length > 0) {
+              alert('配置验证失败：\n' + errors.join('\n'))
+              return
+            }
+            
+            // 保存前端配置到 localStorage
+            localStorage.setItem('lobster_config', JSON.stringify(this.configForm))
+            
+            // 更新全局配置
+            if (window.LOBSTER_CONFIG) {
+              window.LOBSTER_CONFIG.refresh = {
+                ...window.LOBSTER_CONFIG.refresh,
+                ...this.configForm
+              }
+            }
+            
+            // 发送后端配置到服务器
+            if (window.LOBSTER_CONFIG) {
+              const API = window.LOBSTER_CONFIG;
+              const url = API.getApiUrl('/config/sync');
+              
+              const backendConfig = {
+                agent_sync_interval_minutes: this.configForm.agent_sync,
+                task_sync_interval_minutes: this.configForm.task_sync,
+                request_sync_interval_minutes: this.configForm.request_sync,
+                cron_sync_interval_minutes: this.configForm.cron_sync
+              };
+              
+              console.log('📡 发送后端配置：', backendConfig);
+              console.log('📡 发送到 URL：', url);
+              
+              const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(backendConfig)
+              });
+              
+              console.log('📡 响应状态：', res.status);
+              
+              if (!res.ok) {
+                throw new Error(`后端配置保存失败：${res.status}`);
+              }
+              
+              const result = await res.json();
+              console.log('📡 后端配置保存结果：', result);
+            }
+            
+            this.configDialog = false;
+            alert('✅ 配置已保存，30秒之后请查看结果');
+            
+            // 重启定时器
+            setTimeout(() => {
+              location.reload();
+            }, 1000);
+          } catch (err) {
+            console.error('❌ 保存配置失败：', err);
+            alert(`❌ 保存失败：${err.message}`);
+          }
+        },
+        // 从 localStorage 加载配置
+        loadConfigFromStorage() {
+          try {
+            const storedConfig = localStorage.getItem('lobster_config')
+            if (storedConfig) {
+              const config = JSON.parse(storedConfig)
+              // 验证配置有效性
+              if (config.auto_refresh >= 30 && config.auto_refresh <= 600 &&
+                  config.status_data >= 30 && config.status_data <= 600 &&
+                  config.stats_data >= 30 && config.stats_data <= 600) {
+                // 更新全局配置
+                if (window.LOBSTER_CONFIG) {
+                  window.LOBSTER_CONFIG.refresh = {
+                    ...window.LOBSTER_CONFIG.refresh,
+                    ...config
+                  }
+                }
+                console.log('✅ 从 localStorage 加载配置成功')
+              }
+            }
+          } catch (err) {
+            console.error('❌ 加载配置失败：', err)
+          }
+        },
+        // 获取配置值
+        getConfigValue(key, defaultValue) {
+          // 优先从 localStorage 获取
+          try {
+            const storedConfig = localStorage.getItem('lobster_config')
+            if (storedConfig) {
+              const config = JSON.parse(storedConfig)
+              if (config[key] !== undefined) {
+                return config[key]
+              }
+            }
+          } catch (err) {
+            console.error('❌ 读取配置失败：', err)
+          }
+          
+          // 其次从全局配置获取
+          if (window.LOBSTER_CONFIG?.refresh?.[key]) {
+            return window.LOBSTER_CONFIG.refresh[key]
+          }
+          
+          // 返回默认值
+          return defaultValue
+        }
+      },
+      mounted() {
+        // 从 localStorage 加载配置
+        this.loadConfigFromStorage()
+        this.fetchData()
+        this.connectWebSocket()
+        // 从配置文件或 localStorage 读取自动刷新频率（单位：秒）
+        const autoRefreshSeconds = this.getConfigValue('auto_refresh', 300)
+        // 转换为毫秒
+        const autoRefreshMs = autoRefreshSeconds * 1000
+        console.log(`🔄 自动刷新频率设置为 ${autoRefreshSeconds} 秒`)
+        // 设置自动刷新
+        setInterval(this.fetchData, autoRefreshMs)
+        // 监听窗口大小变化，更新 isMobile
+        window.addEventListener('resize', () => {
+          this.isMobile = window.innerWidth <= 768
+        })
+      }
+    }).mount('#app')
+  </script>
+</body>
+</html>
