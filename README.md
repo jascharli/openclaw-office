@@ -78,13 +78,18 @@ cp config.example.json config.json
 # 编辑 config.json 自定义配置
 
 # 4. 启动服务
-./start.sh
+./start.sh        # 前台运行（关闭终端服务停止）
+./start.sh -d     # 后台运行（推荐用于局域网访问）
 
 # 5. 访问应用
 # 前端页面: http://localhost:5173
+# 局域网访问: http://你的IP:5173
 
 # 6. 停止服务
 ./stop.sh
+
+# 7. 查看日志（后台运行模式）
+tail -f backend.log frontend.log
 ```
 
 ### 方式三：源码部署（推荐 ⭐⭐⭐）

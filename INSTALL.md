@@ -227,28 +227,47 @@ copy config.example.json config.json
 
 ```bash
 # Linux/macOS
-./start.sh
+./start.sh        # 前台运行（适合调试，关闭终端服务停止）
+./start.sh -d     # 后台运行（推荐用于局域网访问）
 
 # Windows
 # 双击 start.bat 或在命令行运行 start.bat
 ```
+
+**运行模式说明**:
+- **前台运行**: 实时显示日志，按 `Ctrl+C` 停止，关闭终端服务会停止
+- **后台运行**: 不占用终端，关闭终端服务继续运行，日志写入文件
 
 #### 5. 访问应用
 
 打开浏览器访问：
 
 - **前端页面**: http://localhost:5173
+- **局域网访问**: http://你的服务器IP:5173
 - **API 文档**: http://localhost:8000/docs
 - **健康检查**: http://localhost:8000/health
 
-#### 6. 停止服务
+#### 6. 查看日志（后台运行模式）
+
+```bash
+# 实时查看日志
+tail -f backend.log frontend.log
+
+# 查看后端日志
+tail -f backend.log
+
+# 查看前端日志
+tail -f frontend.log
+```
+
+#### 7. 停止服务
 
 ```bash
 # Linux/macOS
 ./stop.sh
 
 # Windows
-# 双击 stop.bat 或在命令行运行 stop.bat
+# 双击 stop.bat 或在命令行运行 start.bat
 ```
 
 ---
