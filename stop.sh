@@ -1,22 +1,20 @@
 #!/bin/bash
+echo "🛑 停止 OpenClaw 办公室..."
 
-# 龙虾办公室停止脚本
-
-echo "🛑 停止龙虾办公室..."
-
-# 读取 PID 并停止
-if [ -f /tmp/lobster_backend.pid ]; then
-    kill $(cat /tmp/lobster_backend.pid) 2>/dev/null
-    rm /tmp/lobster_backend.pid
+# 停止前端
+if [ -f /tmp/openclaw_frontend.pid ]; then
+    kill $(cat /tmp/openclaw_frontend.pid) 2>/dev/null || true
+    rm /tmp/openclaw_frontend.pid
 fi
 
-if [ -f /tmp/lobster_frontend.pid ]; then
-    kill $(cat /tmp/lobster_frontend.pid) 2>/dev/null
-    rm /tmp/lobster_frontend.pid
+# 停止后端
+if [ -f /tmp/openclaw_backend.pid ]; then
+    kill $(cat /tmp/openclaw_backend.pid) 2>/dev/null || true
+    rm /tmp/openclaw_backend.pid
 fi
 
-# 额外清理
-pkill -f "uvicorn main:app" 2>/dev/null
-pkill -f "http.server 5173" 2>/dev/null
+# 查找并终止残留进程
+pkill -f "uvicorn.*8000" 2>/dev/null || true
+pkill -f "http.server.*5173" 2>/dev/null || true
 
-echo "✅ 已停止龙虾办公室"
+echo "✅ 已停止 OpenClaw 办公室"

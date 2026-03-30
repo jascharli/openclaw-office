@@ -8,13 +8,13 @@
   <meta http-equiv="Expires" content="0">
   <!-- CSP: 允许 Vue 3 使用 eval 和 API 连接，支持局域网访问 -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com; style-src 'self' 'unsafe-inline'; font-src 'self' https://unpkg.com; connect-src *;">
-  <title>🦞 龙虾办公室 - AI 团队工作空间 v1.0.2</title>
+  <title>🦞 龙虾办公室 - AI 团队工作空间 v2.2</title>
   <script src="config.js"></script>
     <script>
       // 检查配置是否加载
       console.log('🔍 检查配置加载情况...');
-      if (window.LOBSTER_CONFIG) {
-        console.log('✅ 配置加载成功:', window.LOBSTER_CONFIG);
+      if (window.OPENCLAW_CONFIG) {
+        console.log('✅ 配置加载成功:', window.OPENCLAW_CONFIG);
       } else {
         console.error('❌ 配置加载失败');
       }
@@ -3614,7 +3614,7 @@
         // 获取日 Token 预算
         getTokenBudgetDaily() {
           // 从 config 读取，默认 500000
-          return window.LOBSTER_CONFIG?.token_budget?.daily || 500000
+          return window.OPENCLAW_CONFIG?.token_budget?.daily || 500000
         },
         // 判断是否是内部模型
         isInternalModel(modelName) {
@@ -3629,11 +3629,11 @@
             console.log('🔧 开始加载数据...')
             
             // 检查配置是否加载
-            if (!window.LOBSTER_CONFIG) {
+            if (!window.OPENCLAW_CONFIG) {
               throw new Error('配置文件未加载')
             }
             
-            const API = window.LOBSTER_CONFIG;
+            const API = window.OPENCLAW_CONFIG;
             console.log('🔧 配置信息:', {
               API_BASE: API.API_BASE,
               WS_URL: API.WS_URL,
@@ -3757,12 +3757,12 @@
         connectWebSocket() {
           try {
             // 检查配置是否加载
-            if (!window.LOBSTER_CONFIG) {
+            if (!window.OPENCLAW_CONFIG) {
               console.error('❌ 配置文件未加载，无法连接 WebSocket')
               return
             }
             
-            const API = window.LOBSTER_CONFIG;
+            const API = window.OPENCLAW_CONFIG;
             const WS_URL = API.WS_URL;
             
             console.log('🔌 尝试连接 WebSocket:', WS_URL)
@@ -3842,11 +3842,11 @@
           if (!this.handoverTarget || !this.selectedTask) return
 
           try {
-            if (!window.LOBSTER_CONFIG) {
+            if (!window.OPENCLAW_CONFIG) {
               throw new Error('配置文件未加载')
             }
             
-            const API = window.LOBSTER_CONFIG;
+            const API = window.OPENCLAW_CONFIG;
             const url = API.getApiUrl('/handovers');
             
             const res = await fetch(url, {
@@ -3878,11 +3878,11 @@
         async sendReminder(agentId) {
           // 手动发送督促
           try {
-            if (!window.LOBSTER_CONFIG) {
+            if (!window.OPENCLAW_CONFIG) {
               throw new Error('配置文件未加载')
             }
             
-            const API = window.LOBSTER_CONFIG;
+            const API = window.OPENCLAW_CONFIG;
             const url = API.getApiUrl(`/reminders/send?agent_id=${agentId}&interval=10`);
             
             const res = await fetch(url, {
@@ -3964,11 +3964,11 @@
           try {
             if (this.budgetEditType === 'token') {
               // 保存 Token 预算
-              if (!window.LOBSTER_CONFIG) {
+              if (!window.OPENCLAW_CONFIG) {
                 throw new Error('配置文件未加载')
               }
               
-              const API = window.LOBSTER_CONFIG;
+              const API = window.OPENCLAW_CONFIG;
               const url = API.getApiUrl('/tokens/budget');
               
               const payload = {}
@@ -4019,14 +4019,14 @@
         openConfigDialog() {
           // 从配置文件或默认值加载当前设置
           this.configForm = {
-            auto_refresh: window.LOBSTER_CONFIG?.refresh?.auto_refresh || 300,
-            status_data: window.LOBSTER_CONFIG?.refresh?.status_data || 300,
-            stats_data: window.LOBSTER_CONFIG?.refresh?.stats_data || 300,
+            auto_refresh: window.OPENCLAW_CONFIG?.refresh?.auto_refresh || 300,
+            status_data: window.OPENCLAW_CONFIG?.refresh?.status_data || 300,
+            stats_data: window.OPENCLAW_CONFIG?.refresh?.stats_data || 300,
             // 后端同步频率
-            agent_sync: window.LOBSTER_CONFIG?.refresh?.agent_sync || 5,
-            task_sync: window.LOBSTER_CONFIG?.refresh?.task_sync || 10,
-            request_sync: window.LOBSTER_CONFIG?.refresh?.request_sync || 15,
-            cron_sync: window.LOBSTER_CONFIG?.refresh?.cron_sync || 90
+            agent_sync: window.OPENCLAW_CONFIG?.refresh?.agent_sync || 5,
+            task_sync: window.OPENCLAW_CONFIG?.refresh?.task_sync || 10,
+            request_sync: window.OPENCLAW_CONFIG?.refresh?.request_sync || 15,
+            cron_sync: window.OPENCLAW_CONFIG?.refresh?.cron_sync || 90
           }
           this.configDialog = true
         },
@@ -4104,16 +4104,16 @@
             localStorage.setItem('lobster_config', JSON.stringify(this.configForm))
             
             // 更新全局配置
-            if (window.LOBSTER_CONFIG) {
-              window.LOBSTER_CONFIG.refresh = {
-                ...window.LOBSTER_CONFIG.refresh,
+            if (window.OPENCLAW_CONFIG) {
+              window.OPENCLAW_CONFIG.refresh = {
+                ...window.OPENCLAW_CONFIG.refresh,
                 ...this.configForm
               }
             }
             
             // 发送后端配置到服务器
-            if (window.LOBSTER_CONFIG) {
-              const API = window.LOBSTER_CONFIG;
+            if (window.OPENCLAW_CONFIG) {
+              const API = window.OPENCLAW_CONFIG;
               const url = API.getApiUrl('/config/sync');
               
               const backendConfig = {
@@ -4167,9 +4167,9 @@
                   config.status_data >= 30 && config.status_data <= 600 &&
                   config.stats_data >= 30 && config.stats_data <= 600) {
                 // 更新全局配置
-                if (window.LOBSTER_CONFIG) {
-                  window.LOBSTER_CONFIG.refresh = {
-                    ...window.LOBSTER_CONFIG.refresh,
+                if (window.OPENCLAW_CONFIG) {
+                  window.OPENCLAW_CONFIG.refresh = {
+                    ...window.OPENCLAW_CONFIG.refresh,
                     ...config
                   }
                 }
@@ -4196,8 +4196,8 @@
           }
           
           // 其次从全局配置获取
-          if (window.LOBSTER_CONFIG?.refresh?.[key]) {
-            return window.LOBSTER_CONFIG.refresh[key]
+          if (window.OPENCLAW_CONFIG?.refresh?.[key]) {
+            return window.OPENCLAW_CONFIG.refresh[key]
           }
           
           // 返回默认值

@@ -1,4 +1,4 @@
-# 龙虾办公室 - 安装部署指南
+# OpenClaw 办公室 - 安装部署指南
 
 **版本**: v2.2  
 **最后更新**: 2026-03-30
@@ -82,8 +82,8 @@ sudo apt-get install docker-ce docker-ce-cli containerd.io docker-compose-plugin
 #### 1. 克隆项目
 
 ```bash
-git clone https://github.com/你的用户名/lobster-office.git
-cd lobster-office
+git clone https://github.com/你的用户名/openclaw-office.git
+cd openclaw-office
 ```
 
 #### 2. 配置（可选）
@@ -147,7 +147,7 @@ docker-compose pull
 docker-compose up -d
 
 # 进入容器
-docker exec -it lobster-office bash
+docker exec -it openclaw-office bash
 ```
 
 ---
@@ -185,8 +185,8 @@ sudo apt-get install python3 python3-pip python3-venv
 #### 1. 克隆项目
 
 ```bash
-git clone https://github.com/你的用户名/lobster-office.git
-cd lobster-office
+git clone https://github.com/你的用户名/openclaw-office.git
+cd openclaw-office
 ```
 
 #### 2. 运行安装脚本
@@ -266,8 +266,8 @@ copy config.example.json config.json
 #### 1. 克隆项目
 
 ```bash
-git clone https://github.com/你的用户名/lobster-office.git
-cd lobster-office
+git clone https://github.com/你的用户名/openclaw-office.git
+cd openclaw-office
 ```
 
 #### 2. 创建虚拟环境（推荐）
@@ -366,7 +366,7 @@ window.LOBSTER_CONFIG = {
 ```json
 {
   "app": {
-    "name": "龙虾办公室",
+    "name": "OpenClaw 办公室",
     "version": "1.0.0",
     "description": "AI 团队工作空间 - 上帝视角的实时监控"
   },
@@ -376,7 +376,7 @@ window.LOBSTER_CONFIG = {
     "frontend_port": 5173
   },
   "database": {
-    "path": "./lobster_office.db",
+    "path": "./openclaw_office.db",
     "timezone": "Asia/Shanghai"
   },
   "agents": {
@@ -415,13 +415,13 @@ window.LOBSTER_CONFIG = {
 
 | 配置项 | 说明 | 默认值 |
 |--------|------|--------|
-| app.name | 应用名称 | 龙虾办公室 |
+| app.name | 应用名称 | OpenClaw 办公室 |
 | app.version | 应用版本 | 1.0.0 |
 | app.description | 应用描述 | AI 团队工作空间 - 上帝视角的实时监控 |
 | server.host | 服务器主机 | 0.0.0.0 |
 | server.port | 后端端口 | 8000 |
 | server.frontend_port | 前端端口 | 5173 |
-| database.path | 数据库路径 | ./lobster_office.db |
+| database.path | 数据库路径 | ./openclaw_office.db |
 | database.timezone | 数据库时区 | Asia/Shanghai |
 | agents.scan_mode | Agent 扫描模式 | auto |
 | agents.scan_base_dir | Agent 扫描基础目录 | ~/.openclaw/agents |
@@ -525,12 +525,12 @@ cd ..
 **A**:
 
 Docker 方式：
-- 数据库: `./backend/lobster_office.db`
+- 数据库: `./backend/openclaw_office.db`
 - 日志: `./backend/logs/`
 - 配置: `./config.json`
 
 脚本方式：
-- 数据库: `backend/lobster_office.db`
+- 数据库: `backend/openclaw_office.db`
 - 日志: `backend/logs/`
 - 配置: `config.json`
 
@@ -540,7 +540,7 @@ Docker 方式：
 
 ```bash
 # 备份数据库
-cp backend/lobster_office.db backup/lobster_office_$(date +%Y%m%d).db
+cp backend/openclaw_office.db backup/openclaw_office_$(date +%Y%m%d).db
 
 # 备份配置
 cp config.json backup/config_$(date +%Y%m%d).json
@@ -594,15 +594,15 @@ cp config.json backup/config_$(date +%Y%m%d).json
 
 如果问题仍未解决：
 1. 查看 [README.md](./README.md)
-2. 提交 [Issue](https://github.com/你的用户名/lobster-office/issues)
+2. 提交 [Issue](https://github.com/你的用户名/openclaw-office/issues)
 3. 查看测试文档 [test/](./test/)
 
 ---
 
 ## 📞 技术支持
 
-- GitHub Issues: https://github.com/你的用户名/lobster-office/issues
-- 文档: https://github.com/你的用户名/lobster-office/tree/main/docs
+- GitHub Issues: https://github.com/你的用户名/openclaw-office/issues
+- 文档: https://github.com/你的用户名/openclaw-office/tree/main/docs
 
 ---
 

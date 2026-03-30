@@ -1,8 +1,8 @@
-# 🦞 龙虾办公室 (Lobster Office)
+# 🦞 龙虾办公室 (OpenClaw Office)
 
 **AI 团队管理系统 - v2.2**
 
-[![GitHub release](https://img.shields.io/github/release/你的用户名/lobster-office.svg)](https://github.com/你的用户名/lobster-office/releases)
+[![GitHub release](https://img.shields.io/github/release/你的用户名/openclaw-office.svg)](https://github.com/你的用户名/openclaw-office/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python Version](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 
@@ -10,7 +10,7 @@
 
 ## 📋 项目简介
 
-龙虾办公室是一个专为 AI 团队设计的智能管理系统，帮助团队高效管理 Agent 状态、任务、数据统计和督促功能。
+龙虾办公室 (OpenClaw Office)是一个专为 AI 团队设计的智能管理系统，帮助团队高效管理 Agent 状态、任务、数据统计和督促功能。想法参考一堂 truman的分享,产品设计和代码完全自我编写.
 
 ### ✨ 核心功能
 
@@ -42,8 +42,8 @@
 
 ```bash
 # 1. 克隆项目
-git clone https://github.com/你的用户名/lobster-office.git
-cd lobster-office
+git clone https://github.com/你的用户名/openclaw-office.git
+cd openclaw-office
 
 # 2. 配置（可选）
 cp config.example.json config.json
@@ -67,8 +67,8 @@ docker-compose down
 
 ```bash
 # 1. 克隆项目
-git clone https://github.com/你的用户名/lobster-office.git
-cd lobster-office
+git clone https://github.com/你的用户名/openclaw-office.git
+cd openclaw-office
 
 # 2. 安装依赖
 ./install.sh
@@ -136,66 +136,6 @@ cp config.example.json config.json
 
 ---
 
-## ⚙️ 配置说明
-
-### 配置文件
-
-复制示例配置文件：
-
-```bash
-cp config.example.json config.json
-```
-
-编辑 `config.json`：
-
-```json
-{
-  "app": {
-    "name": "龙虾办公室",
-    "version": "1.0.0",
-    "description": "AI 团队工作空间 - 上帝视角的实时监控"
-  },
-  "server": {
-    "host": "0.0.0.0",
-    "port": 8000,
-    "frontend_port": 5173
-  },
-  "agents": {
-    "scan_mode": "auto",
-    "scan_base_dir": "~/.openclaw/agents",
-    "custom_agents": []
-  },
-  "token_budget": {
-    "daily": 500000,
-    "monthly": 10000000
-  },
-  "data_sync": {
-    "request_sync_interval_minutes": 5,
-    "agent_sync_interval_minutes": 2
-  }
-}
-```
-
-### 环境变量
-
-可选，创建 `.env` 文件：
-
-```bash
-cp .env.example .env
-```
-
-编辑 `.env`：
-
-```env
-LOBSTER_BACKEND_PORT=8000
-LOBSTER_FRONTEND_PORT=5173
-LOBSTER_TOKEN_BUDGET_DAILY=500000
-LOBSTER_TOKEN_BUDGET_MONTHLY=10000000
-FEISHU_WEBHOOK_URL=your-webhook-url
-```
-
----
-
 ## 🧪 测试
 
 项目包含完整的测试套件：
@@ -234,8 +174,8 @@ python -m pytest scripts/ -v
 
 ```bash
 # 1. 克隆项目
-git clone https://github.com/你的用户名/lobster-office.git
-cd lobster-office
+git clone https://github.com/你的用户名/openclaw-office.git
+cd openclaw-office
 
 # 2. 安装依赖
 cd backend
@@ -284,13 +224,13 @@ python -m http.server 5173
 ## 📞 支持
 
 如有问题，请：
-- 提交 [Issue](https://github.com/你的用户名/lobster-office/issues)
+- 提交 [Issue](https://github.com/你的用户名/openclaw-office/issues)
 - 查看 [文档](./docs/)
 - 查看 [常见问题](./INSTALL.md#-常见问题)
 
 ---
 
-**享受使用龙虾办公室！** 🦞✨
+**享受使用 OpenClaw 办公室！** 🦞✨
 
 ---
 

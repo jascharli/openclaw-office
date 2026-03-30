@@ -1,5 +1,5 @@
 """
-龙虾办公室 - FastAPI 主应用
+OpenClaw 办公室 - FastAPI 主应用
 提供 Agent 状态查询、任务管理、Token 统计等 API
 """
 
@@ -24,7 +24,7 @@ from scheduler import start_reminder_scheduler, stop_reminder_scheduler, start_d
 import asyncio
 
 app = FastAPI(
-    title="龙虾办公室 API",
+    title="OpenClaw 办公室 API",
     description="AI 团队工作空间 - 上帝视角的实时监控和干预能力",
     version="1.0.0"
 )
@@ -45,7 +45,7 @@ app.add_middleware(
 def root():
     """根路径 - 健康检查"""
     return {
-        "service": "龙虾办公室 API",
+        "service": "OpenClaw 办公室 API",
         "version": "1.0.0",
         "status": "running",
         "timestamp": datetime.now(BEIJING_TZ).isoformat()
@@ -888,10 +888,10 @@ def complete_handover(
 @app.on_event("startup")
 async def startup_event():
     """应用启动时初始化数据库"""
-    print("🦞 龙虾办公室 API 启动中...")
+    print("🦞 OpenClaw 办公室 API 启动中...")
     init_db()
     print("✅ 数据库初始化完成（真实数据模式）")
-    print("🚀 龙虾办公室 API 已就绪")
+    print("🚀 OpenClaw 办公室 API 已就绪")
     print("🔗 对接 OpenClaw 真实数据")
     
     # 启动自动督促调度器（后台任务）
@@ -1210,7 +1210,7 @@ def get_agent_list(db: Session = Depends(get_db)):
 @app.on_event("shutdown")
 def shutdown_event():
     """应用关闭时清理资源"""
-    print("🛑 龙虾办公室 API 关闭中...")
+    print("🛑 OpenClaw 办公室 API 关闭中...")
     stop_scheduler()
     print("✅ 已停止所有调度器")
 

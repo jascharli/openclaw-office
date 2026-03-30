@@ -1,5 +1,5 @@
 """
-龙虾办公室 - 数据库模块
+OpenClaw 办公室 - 数据库模块
 SQLite 数据库 Schema 和 ORM 模型
 """
 
@@ -10,7 +10,7 @@ from datetime import datetime
 import os
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATABASE_URL = f"sqlite:///{os.path.join(BASE_DIR, 'lobster_office.db')}"
+DATABASE_URL = f"sqlite:///{os.path.join(BASE_DIR, 'openclaw_office.db')}"
 
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -247,7 +247,7 @@ def seed_sample_data():
                 agent_name="dev-claw",
                 status="working",
                 task_id="task-001",
-                task_name="龙虾办公室开发",
+                task_name="OpenClaw 办公室开发",
                 progress=0.45,
                 elapsed_time=8130,
                 estimated_remaining=5400,
@@ -272,7 +272,7 @@ def seed_sample_data():
         tasks = [
             TaskRecord(
                 task_id="task-001",
-                task_name="龙虾办公室开发",
+                task_name="OpenClaw 办公室开发",
                 agent_id="dev-claw",
                 status="in_progress",
                 priority=0,
@@ -307,7 +307,7 @@ def seed_sample_data():
 
 
 if __name__ == "__main__":
-    print("🦞 初始化龙虾办公室数据库...")
+    print("🦞 初始化 OpenClaw 办公室数据库...")
     init_db()
     seed_sample_data()
     print("✅ 数据库初始化完成")

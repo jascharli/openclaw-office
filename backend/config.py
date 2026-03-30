@@ -1,5 +1,5 @@
 """
-龙虾办公室 - 配置管理模块
+OpenClaw 办公室 - 配置管理模块
 从配置文件加载配置，支持环境变量覆盖
 """
 
@@ -15,7 +15,7 @@ CONFIG_EXAMPLE = BASE_DIR / "config.example.json"
 # 默认配置
 DEFAULT_CONFIG = {
     "app": {
-        "name": "龙虾办公室",
+        "name": "OpenClaw 办公室",
         "version": "1.0.0",
         "description": "AI 团队工作空间"
     },
@@ -25,7 +25,7 @@ DEFAULT_CONFIG = {
         "frontend_port": 5173
     },
     "database": {
-        "path": "./lobster_office.db",
+        "path": "./openclaw_office.db",
         "timezone": "Asia/Shanghai"
     },
     "agents": {

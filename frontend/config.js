@@ -1,11 +1,11 @@
-// 龙虾办公室配置文件
+// OpenClaw 办公室配置文件
 // 刷新频率设置（单位：秒）
 // 动态获取当前页面的协议和主机名
 const protocol = window.location.protocol;
 const hostname = window.location.hostname;
 const backendPort = 8000;
 
-window.LOBSTER_CONFIG = {
+window.OPENCLAW_CONFIG = {
   // API 基础配置
   API_BASE: protocol + '//' + hostname + ':' + backendPort,
   BACKEND_PORT: backendPort,
@@ -90,9 +90,9 @@ window.LOBSTER_CONFIG = {
 };
 
 // 确保配置对象存在
-if (!window.LOBSTER_CONFIG) {
+if (!window.OPENCLAW_CONFIG) {
   console.error('配置文件加载失败，使用默认配置');
-  window.LOBSTER_CONFIG = {
+  window.OPENCLAW_CONFIG = {
     API_BASE: protocol + '//' + hostname + ':' + backendPort,
     BACKEND_PORT: backendPort,
     WS_URL: (protocol === 'https:' ? 'wss:' : 'ws:') + '//' + hostname + ':' + backendPort + '/ws',
