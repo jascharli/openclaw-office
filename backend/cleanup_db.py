@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-清理并创建示例数据库
-用于发布时提供干净的示例数据
+清理数据库
+用于清空所有数据，重新同步
 """
 
 import sqlite3
@@ -9,11 +9,11 @@ import os
 from datetime import datetime, timedelta
 
 # 数据库路径
-DB_PATH = os.path.join(os.path.dirname(__file__), 'lobster_office.db')
+DB_PATH = os.path.join(os.path.dirname(__file__), 'openclaw_office.db')
 
-def cleanup_and_create_example():
-    """清理并创建示例数据库"""
-    print(f"清理并创建示例数据库: {DB_PATH}")
+def cleanup_database():
+    """清理数据库"""
+    print(f"清理数据库: {DB_PATH}")
     
     # 连接数据库
     conn = sqlite3.connect(DB_PATH)
@@ -22,15 +22,12 @@ def cleanup_and_create_example():
     # 清理现有数据
     cleanup_tables(cursor)
     
-    # 插入示例数据
-    insert_example_data(cursor)
-    
     # 提交并关闭
     conn.commit()
     conn.close()
     
-    print("示例数据库创建完成！")
-    print("数据库已清理，包含干净的示例数据。")
+    print("数据库清理完成！")
+    print("所有数据已清空，准备重新同步。")
 
 def cleanup_tables(cursor):
     """清理所有表的数据"""
@@ -138,4 +135,4 @@ def insert_example_data(cursor):
             print(f"插入 Token 日志时出错: {e}")
 
 if __name__ == '__main__':
-    cleanup_and_create_example()
+    cleanup_database()

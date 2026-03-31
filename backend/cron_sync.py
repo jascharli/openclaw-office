@@ -7,10 +7,7 @@ import subprocess
 import json
 import re
 from datetime import datetime, timezone, timedelta
-from database import SessionLocal, TaskRecord, AgentStatus
-
-# 北京时区（UTC+8）
-BEIJING_TZ = timezone(timedelta(hours=8))
+from database import SessionLocal, TaskRecord, AgentStatus, to_utc, CONFIG_TZ, UTC
 
 
 def parse_owner_from_task_name(task_name: str) -> str:
@@ -178,8 +175,9 @@ def sync_cron_to_database():
         cron_tasks = get_cron_tasks()
         print(f"Found {len(cron_tasks)} cron tasks")
         
-        # 今日开始时间（北京时间，不带时区）
-        today_start = datetime.now(BEIJING_TZ).replace(hour=0, minute=0, second=0, microsecond=0).replace(tzinfo=None)
+        # 今日开始时间（UTC 时间，不带时区）
+        today_start = datetime.now(CONFIG_TZ).replace(hour=0, minute=0, second=0, microsecond=0)
+        today_start_utc = to_utc(today_start)
         
         for cron_task in cron_tasks:
             task_id = f"cron-{cron_task['cron_id']}"
@@ -213,7 +211,7 @@ def sync_cron_to_database():
                 
                 # 判断是否应该更新为今日任务
                 # 只有今日创建且今日执行的任务才标记为 completed
-                is_today_task = existing.created_at >= today_start
+                is_today_task = existing.created_at >= today_start_utc
                 
                 if is_today_task:
                     # 今日创建的任务，根据实际执行状态更新
@@ -237,7 +235,7 @@ def sync_cron_to_database():
                         else:
                             existing.status = 'pending'
                     
-                    existing.updated_at = datetime.now(BEIJING_TZ).replace(tzinfo=None)
+                    existing.updated_at = to_utc(datetime.now(CONFIG_TZ))
                     existing.agent_id = owner
                     print(f"  ✅ 更新今日 cron 任务：{cron_task['task_name']} ({existing.status}, agent={owner}, last={last_run})")
                 else:
@@ -258,7 +256,7 @@ def sync_cron_to_database():
                     agent_id=owner,
                     task_type='cron',
                     status=status,
-                    created_at=datetime.now(BEIJING_TZ).replace(tzinfo=None),
+                    created_at=to_utc(datetime.now(CONFIG_TZ)),
                 )
                 db.add(new_task)
                 print(f"  ✨ 新增 cron 任务：{cron_task['task_name']} ({status}, agent={owner})")

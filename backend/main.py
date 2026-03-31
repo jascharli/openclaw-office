@@ -11,7 +11,7 @@ from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 import json
 
-from database import init_db, get_db, AgentStatus, TaskRecord, TokenLog, ReminderLog, TaskHandover, CollaborationGroup, RequestLog, to_local_time, to_utc, UTC, get_current_utc
+from database import init_db, get_db, AgentStatus, TaskRecord, TokenLog, ReminderLog, TaskHandover, CollaborationGroup, RequestLog, to_local_time, to_utc, UTC, get_current_utc, CONFIG_TZ
 from config import config, CONFIG_FILE
 from handover_sync import create_handover_context, get_agent_sessions
 from request_sync import sync_request_logs, get_hourly_stats, get_daily_stats, get_agent_comparison, identify_agent_from_session
@@ -184,14 +184,18 @@ def get_agent_tasks(db: Session = Depends(get_db)):
     from sqlalchemy import or_
     
     # 查询今日任务记录（00:00 至今）- 使用北京时间
-    now = datetime.now()
+    now = datetime.now(CONFIG_TZ)
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     today_end = today_start + timedelta(days=1)
     
+    # 转换为 UTC 时间（不带时区）
+    today_start_utc = today_start.astimezone(UTC).replace(tzinfo=None)
+    today_end_utc = today_end.astimezone(UTC).replace(tzinfo=None)
+    
     # 查询今日创建的任务
     today_tasks = db.query(TaskRecord).filter(
-        TaskRecord.created_at >= today_start,
-        TaskRecord.created_at < today_end
+        TaskRecord.created_at >= today_start_utc,
+        TaskRecord.created_at < today_end_utc
     ).order_by(TaskRecord.created_at.desc()).all()
     
     # 过滤远期计划（周期性任务）
@@ -417,33 +421,49 @@ def get_token_stats(
     获取 Token 使用统计
     period: today, week, month, all
     """
-    now = datetime.utcnow()
-    
-    # 根据周期过滤
-    if period == "today":
-        start_time = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    elif period == "week":
-        start_time = now - timedelta(days=now.weekday())
-    elif period == "month":
-        start_time = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    else:
-        start_time = None
-    
     # 优先从 request_logs 聚合 token 数据（更准确）
     from sqlalchemy import func
     from datetime import timedelta
     
-    # 使用系统时区查询（数据库存储的是系统时区时间）
-    # 在中国时区 = 北京时间（UTC+8）
-    now = datetime.now()
-    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    # 获取当前北京时间
+    now_local = datetime.now(CONFIG_TZ)
     
-    query = db.query(
-        RequestLog.agent_id,
-        func.sum(RequestLog.tokens_total).label('total_tokens')
-    ).filter(
-        RequestLog.created_at >= today_start
-    )
+    # 根据周期计算时间范围（北京时间）
+    if period == "today":
+        start_local = now_local.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_local = start_local + timedelta(days=1)
+    elif period == "week":
+        start_local = now_local - timedelta(days=now_local.weekday())
+        start_local = start_local.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_local = start_local + timedelta(days=7)
+    elif period == "month":
+        start_local = now_local.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        if start_local.month == 12:
+            end_local = start_local.replace(year=start_local.year+1, month=1, day=1)
+        else:
+            end_local = start_local.replace(month=start_local.month+1, day=1)
+    else:  # all
+        start_local = None
+        end_local = None
+    
+    # 转换为 UTC 时间（不带时区）
+    if start_local and end_local:
+        start_utc = start_local.astimezone(UTC).replace(tzinfo=None)
+        end_utc = end_local.astimezone(UTC).replace(tzinfo=None)
+        
+        query = db.query(
+            RequestLog.agent_id,
+            func.sum(RequestLog.tokens_total).label('total_tokens')
+        ).filter(
+            RequestLog.created_at >= start_utc,
+            RequestLog.created_at < end_utc
+        )
+    else:
+        query = db.query(
+            RequestLog.agent_id,
+            func.sum(RequestLog.tokens_total).label('total_tokens')
+        )
+    
     query = query.group_by(RequestLog.agent_id)
     results = query.all()
     
@@ -1064,15 +1084,19 @@ def get_provider_stats(
     """
     from sqlalchemy import func, text
     
-    # 直接使用当前北京时间的日期
+    # 解析传入的日期（北京时间），如果没有传入则使用当前日期
     if not date:
         # 获取当前北京时间
-        now = datetime.now()
-        date = now.strftime('%Y-%m-%d')
+        now_local = datetime.now(CONFIG_TZ)
+        date = now_local.strftime('%Y-%m-%d')
     
-    # 数据库存储的已经是北京时间，直接使用
-    start = datetime.strptime(date, '%Y-%m-%d')
-    end = start + timedelta(days=1)
+    # 1. 解析传入的日期（北京时间）
+    start_local = datetime.strptime(date, '%Y-%m-%d').replace(tzinfo=CONFIG_TZ)
+    end_local = start_local + timedelta(days=1)
+    
+    # 2. 转换为 UTC 时间（不带时区）
+    start_utc = start_local.astimezone(UTC).replace(tzinfo=None)
+    end_utc = end_local.astimezone(UTC).replace(tzinfo=None)
     
     # 获取按provider分组的统计数据
     query = text("""
@@ -1086,7 +1110,7 @@ def get_provider_stats(
         GROUP BY provider
     """)
     
-    results = db.execute(query, {"start": start, "end": end}).fetchall()
+    results = db.execute(query, {"start": start_utc, "end": end_utc}).fetchall()
     
     # 调试：打印查询结果
     print(f"查询结果: {results}")
@@ -1109,10 +1133,15 @@ def get_provider_stats(
             ORDER BY count DESC
             LIMIT 1
         """)
-        peak = db.execute(peak_query, {"start": start, "end": end, "provider": provider}).fetchone()
+        peak = db.execute(peak_query, {"start": start_utc, "end": end_utc, "provider": provider}).fetchone()
         
         if peak:
-            peak_hour = int(peak[0])
+            # 数据库中存的是 UTC 时间的小时，需要转换为本地时区
+            utc_hour = int(peak[0])
+            utc_datetime = datetime.combine(start_utc.date(), datetime.min.time()) + timedelta(hours=utc_hour)
+            utc_datetime = utc_datetime.replace(tzinfo=UTC)
+            local_datetime = utc_datetime.astimezone(CONFIG_TZ)
+            peak_hour = local_datetime.hour
             peak_count = peak[1]
         else:
             peak_hour = 0
@@ -1130,8 +1159,8 @@ def get_provider_stats(
         'date': date,
         'providers': providers,
         'debug': str(results),
-        'start': start.isoformat(),
-        'end': end.isoformat()
+        'start': start_utc.isoformat(),
+        'end': end_utc.isoformat()
     }
 
 
@@ -1145,24 +1174,31 @@ def get_model_stats(
     from sqlalchemy import func
     
     if not date:
-        # 获取当前北京时间（与 get_provider_stats 保持一致）
-        now = datetime.now()
-        date = now.strftime('%Y-%m-%d')
+        # 获取当前北京时间
+        now_local = datetime.now(CONFIG_TZ)
+        date = now_local.strftime('%Y-%m-%d')
     
-    # 数据库存储的已经是北京时间，直接使用
-    start = datetime.strptime(date, '%Y-%m-%d')
-    end = start + timedelta(days=1)
+    # 1. 解析传入的日期（北京时间）
+    start_local = datetime.strptime(date, '%Y-%m-%d').replace(tzinfo=CONFIG_TZ)
+    end_local = start_local + timedelta(days=1)
+    
+    # 2. 转换为 UTC 时间（不带时区）
+    start_utc = start_local.astimezone(UTC).replace(tzinfo=None)
+    end_utc = end_local.astimezone(UTC).replace(tzinfo=None)
     
     query = db.query(
         RequestLog.model_name.label('model'),
         func.count(RequestLog.id).label('count'),
         func.sum(RequestLog.tokens_total).label('tokens')
     ).filter(
-        RequestLog.created_at >= start,
-        RequestLog.created_at < end,
+        RequestLog.created_at >= start_utc,
+        RequestLog.created_at < end_utc,
         RequestLog.model_name != '',
         RequestLog.model_name != None
     )
+    
+    if provider:
+        query = query.filter(RequestLog.provider == provider)
     
     models = query.group_by(RequestLog.model_name).all()
     

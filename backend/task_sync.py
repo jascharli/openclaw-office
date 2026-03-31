@@ -191,11 +191,13 @@ def merge_and_deduplicate_tasks():
     try:
         # 1. 清理完成超过 24 小时的任务
         from datetime import timedelta
-        cutoff_time = datetime.now() - timedelta(hours=24)
+        from database import UTC, CONFIG_TZ
+        cutoff_time = datetime.now(CONFIG_TZ) - timedelta(hours=24)
+        cutoff_time_utc = cutoff_time.astimezone(UTC).replace(tzinfo=None)
         
         old_tasks = db.query(TaskRecord).filter(
             TaskRecord.status == 'completed',
-            TaskRecord.completed_at < cutoff_time
+            TaskRecord.completed_at < cutoff_time_utc
         ).all()
         
         if old_tasks:

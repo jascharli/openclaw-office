@@ -6,10 +6,13 @@
 import os
 import json
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional, Tuple
 from sqlalchemy.orm import Session
-from database import RequestLog, to_utc
+from database import RequestLog, to_utc, CONFIG_TZ, UTC
+
+# UTC 时区
+UTC = timezone.utc
 
 
 # 模型到服务商的映射表
@@ -247,20 +250,20 @@ def parse_session_file(db: Session, session_path: str, agent_id: str, agent_name
                 # 支持两种格式：数字时间戳（UTC）或 ISO 字符串（UTC）
                 if isinstance(ts, str):
                     if 'T' in ts:  # ISO 格式：2026-03-25T20:21:48.093Z
-                        # 解析为 UTC 时间
+                        # 解析为带时区的 UTC 时间
                         ts = ts.replace('Z', '+00:00')
                         created_at = datetime.fromisoformat(ts)
                     else:  # 数字字符串
                         ts_float = float(ts) / 1000
-                        # 从 UTC 时间戳创建 datetime
-                        created_at = datetime.utcfromtimestamp(ts_float)
+                        # 从 UTC 时间戳创建带时区的 datetime
+                        created_at = datetime.fromtimestamp(ts_float, tz=UTC)
                 else:  # 数字时间戳（UTC）
                     ts_float = ts / 1000
-                    # 从 UTC 时间戳创建 datetime
-                    created_at = datetime.utcfromtimestamp(ts_float)
+                    # 从 UTC 时间戳创建带时区的 datetime
+                    created_at = datetime.fromtimestamp(ts_float, tz=UTC)
             except Exception as e:
                 print(f"⚠️ 时间解析失败：{ts} - {e}")
-                created_at = datetime.utcnow()
+                created_at = datetime.now(UTC)
             
             # 确保存储为 UTC 时间（不带时区）
             created_at_utc = to_utc(created_at)
@@ -289,8 +292,13 @@ def get_hourly_stats(db: Session, agent_id: Optional[str], date: str) -> Dict:
     """
     from sqlalchemy import func, text
     # 数据库存储的是 UTC 时间，需要根据配置的时区进行查询
-    start = datetime.strptime(date, '%Y-%m-%d')
-    end = start + timedelta(days=1)
+    # 1. 解析传入的日期（北京时间）
+    start_local = datetime.strptime(date, '%Y-%m-%d').replace(tzinfo=CONFIG_TZ)
+    end_local = start_local + timedelta(days=1)
+    
+    # 2. 转换为 UTC 时间（不带时区）
+    start_utc = start_local.astimezone(UTC).replace(tzinfo=None)
+    end_utc = end_local.astimezone(UTC).replace(tzinfo=None)
     
     # 查询：每个小时 × 每个服务商 的请求数
     query = text("""
@@ -305,7 +313,7 @@ def get_hourly_stats(db: Session, agent_id: Optional[str], date: str) -> Dict:
         ORDER BY hour, provider
     """)
     
-    params = {"start": start, "end": end}
+    params = {"start": start_utc, "end": end_utc}
     if agent_id:
         query = text("""
             SELECT 
@@ -336,15 +344,24 @@ def get_hourly_stats(db: Session, agent_id: Optional[str], date: str) -> Dict:
         }
     
     for row in results:
-        hour = row.hour
+        # 数据库中存的是 UTC 时间的小时，需要转换为本地时区
+        utc_hour = int(row.hour)
+        # 构造 UTC 时间的 datetime 对象
+        utc_datetime = datetime.combine(start_utc.date(), datetime.min.time()) + timedelta(hours=utc_hour)
+        utc_datetime = utc_datetime.replace(tzinfo=UTC)
+        # 转换为本地时区
+        local_datetime = utc_datetime.astimezone(CONFIG_TZ)
+        local_hour = local_datetime.hour
+        local_hour_str = str(local_hour).zfill(2)
+        
         provider = row.provider
         count = row.count
         
         # 使用数据库中的 provider 字段
-        if provider not in hourly_data[hour]['by_provider']:
-            hourly_data[hour]['by_provider'][provider] = 0
-        hourly_data[hour]['by_provider'][provider] += count
-        hourly_data[hour]['total'] += count
+        if provider not in hourly_data[local_hour_str]['by_provider']:
+            hourly_data[local_hour_str]['by_provider'][provider] = 0
+        hourly_data[local_hour_str]['by_provider'][provider] += count
+        hourly_data[local_hour_str]['total'] += count
         total_count += count
     
     # 转换为列表输出
@@ -364,26 +381,41 @@ def get_hourly_stats(db: Session, agent_id: Optional[str], date: str) -> Dict:
 def get_daily_stats(db: Session, agent_id: Optional[str], start_date: str, end_date: str) -> Dict:
     """获取每日统计"""
     from sqlalchemy import func
-    start = datetime.strptime(start_date, '%Y-%m-%d')
-    end = datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1)
+    # 1. 解析传入的日期（北京时间）
+    start_local = datetime.strptime(start_date, '%Y-%m-%d').replace(tzinfo=CONFIG_TZ)
+    end_local = datetime.strptime(end_date, '%Y-%m-%d').replace(tzinfo=CONFIG_TZ) + timedelta(days=1)
+    
+    # 2. 转换为 UTC 时间（不带时区）
+    start_utc = start_local.astimezone(UTC).replace(tzinfo=None)
+    end_utc = end_local.astimezone(UTC).replace(tzinfo=None)
+    
     query = db.query(
         func.date(RequestLog.created_at).label('date'),
         func.count(RequestLog.id).label('count'),
         func.sum(RequestLog.tokens_total).label('tokens')
-    ).filter(RequestLog.created_at >= start, RequestLog.created_at < end)
+    ).filter(RequestLog.created_at >= start_utc, RequestLog.created_at < end_utc)
     if agent_id:
         query = query.filter(RequestLog.agent_id == agent_id)
     query = query.group_by(func.date(RequestLog.created_at))
     results = query.all()
     
     daily = {}
-    current = start
-    while current < end:
+    current = start_local.replace(tzinfo=None)
+    end_date_obj = end_local.replace(tzinfo=None)
+    while current < end_date_obj:
         daily[current.strftime('%Y-%m-%d')] = {'day': current.strftime('%Y-%m-%d'), 'count': 0, 'tokens': 0}
         current += timedelta(days=1)
+    
     for row in results:
-        if row.date in daily:
-            daily[row.date] = {'day': row.date, 'count': row.count, 'tokens': row.tokens or 0}
+        # 数据库返回的 date 是 UTC 日期，需要转换为本地日期
+        # 构造 UTC 日期时间
+        utc_date = datetime.strptime(row.date, '%Y-%m-%d').replace(tzinfo=UTC)
+        # 转换为本地时区
+        local_date = utc_date.astimezone(CONFIG_TZ)
+        local_date_str = local_date.strftime('%Y-%m-%d')
+        
+        if local_date_str in daily:
+            daily[local_date_str] = {'day': local_date_str, 'count': row.count, 'tokens': row.tokens or 0}
     
     return {'period': 'daily_range', 'start_date': start_date, 'end_date': end_date, 'agent_id': agent_id,
             'daily': list(daily.values()), 'total': {'count': sum(d['count'] for d in daily.values()), 'tokens': sum(d['tokens'] for d in daily.values())}}
@@ -392,13 +424,19 @@ def get_daily_stats(db: Session, agent_id: Optional[str], start_date: str, end_d
 def get_agent_comparison(db: Session, date: str) -> Dict:
     """获取 Agent 对比"""
     from sqlalchemy import func
-    start = datetime.strptime(date, '%Y-%m-%d')
-    end = start + timedelta(days=1)
+    # 1. 解析传入的日期（北京时间）
+    start_local = datetime.strptime(date, '%Y-%m-%d').replace(tzinfo=CONFIG_TZ)
+    end_local = start_local + timedelta(days=1)
+    
+    # 2. 转换为 UTC 时间（不带时区）
+    start_utc = start_local.astimezone(UTC).replace(tzinfo=None)
+    end_utc = end_local.astimezone(UTC).replace(tzinfo=None)
+    
     query = db.query(
         RequestLog.agent_id, RequestLog.agent_name,
         func.count(RequestLog.id).label('count'),
         func.sum(RequestLog.tokens_total).label('tokens')
-    ).filter(RequestLog.created_at >= start, RequestLog.created_at < end
+    ).filter(RequestLog.created_at >= start_utc, RequestLog.created_at < end_utc
     ).group_by(RequestLog.agent_id, RequestLog.agent_name)
     results = query.all()
     
