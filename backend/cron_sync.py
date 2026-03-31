@@ -1,6 +1,23 @@
 """
 Cron 任务同步模块
 从 OpenClaw cron 系统同步任务状态到龙虾办公室数据库
+
+Cron 任务状态判断逻辑：
+    第一步：判断是否是今天的任务
+        - Next 有值且是今天 -> 今天的任务
+        - Next 无值，Last 有值且 < 24h -> 今天的任务
+        - Next/Last 都无值 -> 根据 Status 判断（idle=paused, error=blocked, 其他=pending）
+
+    第二步：判断是否已过执行时间
+        - Next 已过 且 Status=ok -> completed
+        - Next 已过 且 Status=error -> blocked
+        - Next 未过 -> pending
+        - 无 Next，用 Last 判断：今天内执行过 -> completed/error
+        - 无 Next，用 Last 判断：超过24h未执行 -> pending
+
+    第三步：周期性任务拆分
+        - 每日 X:00 -> 不拆分
+        - 每小时/每 X 小时 -> 拆分为多个任务实例（今日剩余次数）
 """
 
 import subprocess
@@ -12,50 +29,310 @@ from database import SessionLocal, TaskRecord, AgentStatus, to_utc, CONFIG_TZ, U
 
 def parse_owner_from_task_name(task_name: str) -> str:
     """从任务名称解析归属 agent"""
-    # 优先匹配明确的 Agent 前缀
     match = re.match(r'^(dev-claw|work-claw|daughter|main|wife)\b', task_name, re.IGNORECASE)
     if match:
         return match.group(1).lower()
     
-    # 检查是否包含 Wife-Agent（任务名称中常见）
     if 'wife-agent' in task_name.lower():
         return 'wife'
     
     return None
 
 
-def parse_last_run_time(last_run_str: str) -> bool:
+def parse_schedule_info(schedule: str) -> dict:
     """
-    解析 last_run 字符串，判断是否是今日执行
-    返回 True 如果是今日执行，False 否则
+    解析 Schedule 字段，获取调度类型和执行时间信息
+    
+    返回：
+        {
+            'type': 'daily' | 'hourly' | 'interval' | 'unknown',
+            'hour': int or None,  # 每日 X 点
+            'interval_hours': int or None,  # 每 X 小时
+            'is_daily_specific_time': bool  # 是否是每日特定时间
+        }
     """
+    result = {
+        'type': 'unknown',
+        'hour': None,
+        'interval_hours': None,
+        'is_daily_specific_time': False
+    }
+    
+    if not schedule or schedule == '-':
+        return result
+    
+    # 匹配每日 X 点：cron 0 23 * * *
+    daily_match = re.match(r'cron\s+0\s+(\d+)\s+', schedule)
+    if daily_match:
+        result['type'] = 'daily'
+        result['hour'] = int(daily_match.group(1))
+        result['is_daily_specific_time'] = True
+        return result
+    
+    # 匹配每 X 小时：every Xh 或 every X hour
+    interval_match = re.match(r'every\s+(\d+)h', schedule, re.IGNORECASE)
+    if interval_match:
+        result['type'] = 'interval'
+        result['interval_hours'] = int(interval_match.group(1))
+        return result
+    
+    # 匹配每小时：every 1h 或 every hour
+    hourly_match = re.match(r'every\s+1h?', schedule, re.IGNORECASE)
+    if hourly_match:
+        result['type'] = 'hourly'
+        result['interval_hours'] = 1
+        return result
+    
+    return result
+
+
+def parse_next_time(next_str: str) -> dict:
+    """
+    解析 Next 字段，获取下次执行时间信息
+    
+    返回：
+        {
+            'is_today': bool,  # 是否是今天
+            'is_past': bool,   # 是否已过执行时间
+            'datetime': datetime or None,  # 解析后的 datetime
+            'raw': str  # 原始字符串
+        }
+    """
+    now = datetime.now(CONFIG_TZ)
+    result = {
+        'is_today': False,
+        'is_past': False,
+        'datetime': None,
+        'raw': next_str
+    }
+    
+    if not next_str or next_str == '-':
+        return result
+    
+    # 匹配 "today 23:00" 格式
+    today_match = re.match(r'today\s+(\d+):(\d+)', next_str)
+    if today_match:
+        hour = int(today_match.group(1))
+        minute = int(today_match.group(2))
+        target_dt = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+        result['is_today'] = True
+        result['is_past'] = target_dt < now
+        result['datetime'] = target_dt
+        return result
+    
+    # 匹配 "in 2h" 格式（未来 X 小时）
+    in_hours_match = re.match(r'in\s+(\d+)h', next_str)
+    if in_hours_match:
+        hours = int(in_hours_match.group(1))
+        result['is_today'] = True  # 即将执行，视为今天
+        result['is_past'] = False
+        result['datetime'] = now + timedelta(hours=hours)
+        return result
+    
+    # 匹配 "in 30m" 格式（未来 X 分钟）
+    in_minutes_match = re.match(r'in\s+(\d+)m', next_str)
+    if in_minutes_match:
+        minutes = int(in_minutes_match.group(1))
+        result['is_today'] = True
+        result['is_past'] = False
+        result['datetime'] = now + timedelta(minutes=minutes)
+        return result
+    
+    # 匹配 "tomorrow 23:00" 格式
+    tomorrow_match = re.match(r'tomorrow\s+(\d+):(\d+)', next_str)
+    if tomorrow_match:
+        hour = int(tomorrow_match.group(1))
+        minute = int(tomorrow_match.group(2))
+        tomorrow_date = now.date() + timedelta(days=1)
+        target_dt = datetime.combine(tomorrow_date, datetime.min.time()).replace(
+            hour=hour, minute=minute
+        )
+        target_dt = CONFIG_TZ.localize(target_dt)
+        result['is_today'] = False
+        result['is_past'] = False
+        result['datetime'] = target_dt
+        return result
+    
+    return result
+
+
+def parse_last_run_time(last_run_str: str) -> dict:
+    """
+    解析 Last 字段，判断上次执行时间和是否今日执行
+    
+    返回：
+        {
+            'is_today': bool,  # 是否今日执行（< 24h）
+            'hours_ago': int or None,  # 多少小时前
+            'minutes_ago': int or None,  # 多少分钟前
+            'raw': str  # 原始字符串
+        }
+    """
+    result = {
+        'is_today': False,
+        'hours_ago': None,
+        'minutes_ago': None,
+        'raw': last_run_str
+    }
+    
     if not last_run_str or last_run_str == '-':
-        return False
+        return result
     
-    # 解析各种时间格式
-    # "20h ago" - 20小时前
-    # "4h ago" - 4小时前
-    # "11m ago" - 11分钟前
-    # "7d ago" - 7天前
-    # "-" - 从未执行
-    
+    # 匹配 "20h ago" 格式
     hours_match = re.match(r'(\d+)h ago', last_run_str)
     if hours_match:
         hours = int(hours_match.group(1))
-        # 如果小于 24 小时，可能是今日执行
+        result['hours_ago'] = hours
         if hours < 24:
-            return True
+            result['is_today'] = True
+        return result
     
+    # 匹配 "11m ago" 格式
     minutes_match = re.match(r'(\d+)m ago', last_run_str)
     if minutes_match:
-        # 几分钟前肯定是今日
-        return True
+        minutes = int(minutes_match.group(1))
+        result['minutes_ago'] = minutes
+        result['is_today'] = True  # 几分钟前肯定是今日
+        return result
     
-    return False
+    # 匹配 "7d ago" 格式
+    days_match = re.match(r'(\d+)d ago', last_run_str)
+    if days_match:
+        days = int(days_match.group(1))
+        result['hours_ago'] = days * 24
+        result['is_today'] = False
+        return result
+    
+    return result
+
+
+def determine_task_status(next_info: dict, last_info: dict, cron_status: str) -> str:
+    """
+    根据 Next、Last、Status 判断任务状态
+    
+    状态映射：
+        - completed: 已完成
+        - pending: 待执行
+        - blocked: 执行失败
+        - paused: 暂停
+    
+    判断逻辑：
+        1. 如果 Next 有值：
+            - 已过执行时间 -> 根据 cron_status 判断 completed/blocked
+            - 未过执行时间 -> pending
+        
+        2. 如果 Next 无值，用 Last 判断：
+            - 今日执行过 -> 根据 cron_status 判断
+            - 未在今日执行 -> pending
+        
+        3. 如果 Next/Last 都无值：
+            - idle -> paused
+            - error -> blocked
+            - 其他 -> pending
+    """
+    # 情况1：Next 有值
+    if next_info['datetime'] is not None:
+        if next_info['is_past']:
+            # Next 已过，执行完成
+            if cron_status == 'ok':
+                return 'completed'
+            elif cron_status == 'error':
+                return 'blocked'
+            else:
+                return 'pending'
+        else:
+            # Next 未过，等待执行
+            return 'pending'
+    
+    # 情况2：Next 无值，用 Last 判断
+    if last_info['is_today']:
+        # 今日执行过
+        if cron_status == 'ok':
+            return 'completed'
+        elif cron_status == 'error':
+            return 'blocked'
+        else:
+            return 'pending'
+    elif last_info['hours_ago'] is not None:
+        # 超过24小时未执行
+        return 'pending'
+    
+    # 情况3：Next/Last 都无值
+    if cron_status == 'idle':
+        return 'paused'
+    elif cron_status == 'error':
+        return 'blocked'
+    else:
+        return 'pending'
+
+
+def should_split_task(schedule_info: dict) -> bool:
+    """
+    判断任务是否需要拆分
+    
+    需要拆分的任务类型：
+        - hourly: 每小时执行 -> 拆分为多个任务实例
+        - interval: 每 X 小时执行 -> 拆分为多个任务实例
+    
+    不需要拆分：
+        - daily: 每日特定时间 -> 单个任务
+    """
+    return schedule_info['type'] in ['hourly', 'interval']
+
+
+def generate_split_tasks(cron_task: dict, schedule_info: dict) -> list:
+    """
+    拆分周期性任务为多个任务实例
+    
+    例如：每 2 小时执行，当前 18:00
+    -> 生成 3 个任务实例：18:00(已完成), 20:00(待执行), 22:00(待执行)
+    """
+    now = datetime.now(CONFIG_TZ)
+    interval_hours = schedule_info['interval_hours']
+    
+    tasks = []
+    
+    # 计算今日剩余的执行次数
+    # 从 00:00 到 23:59，共 24 小时
+    
+    # 获取当前时间所在的小时区间
+    current_hour = now.hour
+    
+    # 生成今日剩余的任务实例
+    for hour in range(0, 24, interval_hours):
+        # 计算这个小时是否已过
+        target_dt = now.replace(hour=hour, minute=0, second=0, microsecond=0)
+        
+        # 创建任务实例
+        task_instance = {
+            'cron_id': f"{cron_task['cron_id']}-{hour}",
+            'task_name': f"{cron_task['task_name']} ({hour}:00)",
+            'owner_agent': cron_task['owner_agent'],
+            'schedule': cron_task.get('schedule', '-'),
+            'next_time': target_dt,
+            'last_run': cron_task.get('last_run', '-'),
+            'status': cron_task.get('status', 'unknown'),
+            'target_datetime': target_dt,  # 这个实例的执行时间
+            'is_past': target_dt < now,
+        }
+        tasks.append(task_instance)
+    
+    return tasks
 
 
 def get_cron_tasks():
-    """获取 OpenClaw cron 任务列表"""
+    """
+    获取 OpenClaw cron 任务列表
+    
+    返回字段：
+        - cron_id: 任务 ID
+        - task_name: 任务名称
+        - owner_agent: 归属 Agent
+        - schedule: 调度规则
+        - next: 下次执行时间（原始字符串）
+        - last_run: 上次执行时间（原始字符串）
+        - status: 执行状态（ok/error/idle）
+    """
     try:
         result = subprocess.run(
             ['openclaw', 'cron', 'list'],
@@ -68,13 +345,11 @@ def get_cron_tasks():
             print(f"Error running openclaw cron list: {result.stderr}")
             return []
         
-        # 解析输出（表格格式）
         tasks = []
         lines = result.stdout.strip().split('\n')
         
         # 跳过表头
         for line in lines[1:]:
-            # 找到第一个空格的位置，提取 ID
             first_space = line.find(' ')
             if first_space == -1:
                 continue
@@ -82,7 +357,7 @@ def get_cron_tasks():
             task_id = line[:first_space]
             remaining = line[first_space:].strip()
             
-            # 找到 Schedule 列的开始位置（以 'cron' 或 'every' 开头）
+            # 找到 Schedule 列的开始位置
             schedule_start = remaining.find(' cron ')
             if schedule_start == -1:
                 schedule_start = remaining.find(' every ')
@@ -93,46 +368,48 @@ def get_cron_tasks():
             task_name = remaining[:schedule_start].strip()
             remaining_after_name = remaining[schedule_start:].strip()
             
-            # 提取剩余列：Schedule | Next | Last | Status | Target | Agent ID | Model
-            # 从后往前解析，因为后面的列格式更固定
+            # 分割各列：Schedule | Next | Last | Status | Target | Agent ID | Model
             parts = remaining_after_name.split()
             
-            # 解析状态、Agent ID 等
+            # 解析各字段
+            schedule = '-'
+            next_time = '-'
+            last_run = '-'
             status = 'unknown'
             agent_id = 'main'
-            last_run = '-'
             
-            # 从后往前找状态列
+            # 找到 Status 列的位置（从后往前）
+            status_idx = -1
             for j in range(len(parts) - 1, -1, -1):
                 if parts[j] in ['ok', 'error', 'idle', 'pending']:
                     status = parts[j]
-                    # 找到状态后，确定其他列
-                    if j - 1 >= 0:
-                        # 处理 last_run 格式，如 "2h ago"
-                        if j - 2 >= 0 and parts[j - 2].endswith('h') and parts[j - 1] == 'ago':
-                            last_run = f"{parts[j - 2]} ago"
-                        elif j - 2 >= 0 and parts[j - 2].endswith('m') and parts[j - 1] == 'ago':
-                            last_run = f"{parts[j - 2]} ago"
-                        elif j - 2 >= 0 and parts[j - 2].endswith('d') and parts[j - 1] == 'ago':
-                            last_run = f"{parts[j - 2]} ago"
-                        else:
-                            last_run = parts[j - 1]
-                    if j - 3 >= 0:
-                        # Agent ID 通常在状态列前三位
-                        potential_agent = parts[j - 3]
-                        # 检查是否是有效的 Agent ID
-                        if potential_agent in ['dev-claw', 'work-claw', 'daughter', 'main', 'wife']:
-                            agent_id = potential_agent
+                    status_idx = j
                     break
             
-            # 优先从任务名称解析归属 Agent
+            # 根据 Status 位置推断其他列
+            # 格式：Schedule | Next | Last | Status | Target | Agent ID | Model
+            # 至少需要：Schedule, Next, Last
+            
+            # Schedule 通常在前3个部分
+            if status_idx >= 3:
+                schedule = ' '.join(parts[:status_idx-2])
+                # Next 是 Schedule 后的下一个
+                next_time = parts[status_idx-2] if status_idx-2 >= 0 else '-'
+                # Last 是 Next 后的下一个
+                last_run = parts[status_idx-1] if status_idx-1 >= 0 else '-'
+            
+            # 尝试解析 Agent ID
+            if status_idx >= 0 and status_idx + 2 < len(parts):
+                potential_agent = parts[status_idx + 2]
+                if potential_agent in ['dev-claw', 'work-claw', 'daughter', 'main', 'wife']:
+                    agent_id = potential_agent
+            
+            # 解析归属 Agent
             owner_from_name = parse_owner_from_task_name(task_name)
             if owner_from_name:
                 owner = owner_from_name
             else:
-                # 如果任务名称没有解析出归属，使用 Agent ID 列
                 owner = agent_id
-                # 如果 Agent ID 为空或无效，根据关键词推断
                 if owner == 'main' or owner == '-':
                     if any(kw in task_name.lower() for kw in ['日报', '天气', '新闻', '战况', '需求']):
                         owner = 'work-claw'
@@ -152,12 +429,18 @@ def get_cron_tasks():
             if not parse_owner_from_task_name(task_name):
                 task_name = f"{owner} {task_name}"
             
+            # 解析 Schedule 信息
+            schedule_info = parse_schedule_info(schedule)
+            
             tasks.append({
                 'cron_id': task_id,
                 'task_name': task_name,
                 'owner_agent': owner,
-                'status': status,
+                'schedule': schedule,
+                'schedule_info': schedule_info,
+                'next': next_time,
                 'last_run': last_run,
+                'status': status,
             })
         
         return tasks
@@ -168,101 +451,103 @@ def get_cron_tasks():
 
 
 def sync_cron_to_database():
-    """同步 cron 任务到数据库"""
+    """
+    同步 cron 任务到数据库
+    
+    处理逻辑：
+        1. 获取所有 cron 任务
+        2. 对于周期性任务（每小时/每X小时），拆分为多个任务实例
+        3. 根据 Next/Last/Status 判断任务状态
+        4. 同步到数据库
+    """
     db = SessionLocal()
     
     try:
         cron_tasks = get_cron_tasks()
-        print(f"Found {len(cron_tasks)} cron tasks")
+        print(f"Found {len(cron_tasks)} cron tasks from openclaw")
         
-        # 今日开始时间（UTC 时间，不带时区）
-        today_start = datetime.now(CONFIG_TZ).replace(hour=0, minute=0, second=0, microsecond=0)
-        today_start_utc = to_utc(today_start)
+        # 解析所有任务（包括拆分的任务实例）
+        all_tasks_to_sync = []
         
         for cron_task in cron_tasks:
-            task_id = f"cron-{cron_task['cron_id']}"
-            owner = cron_task['owner_agent'] or 'main'
+            # 检查是否需要拆分任务
+            if should_split_task(cron_task['schedule_info']):
+                # 拆分任务
+                split_tasks = generate_split_tasks(cron_task, cron_task['schedule_info'])
+                all_tasks_to_sync.extend(split_tasks)
+                print(f"  📦 拆分任务 {cron_task['task_name']} 为 {len(split_tasks)} 个实例")
+            else:
+                # 不拆分，直接添加
+                all_tasks_to_sync.append(cron_task)
+        
+        print(f"Total tasks to sync: {len(all_tasks_to_sync)}")
+        
+        now_utc = to_utc(datetime.now(CONFIG_TZ))
+        
+        for task in all_tasks_to_sync:
+            task_id = f"cron-{task['cron_id']}"
+            owner = task['owner_agent'] or 'main'
             
-            # 检查是否已存在（任何时间的）
+            # 解析 Next 和 Last 时间信息
+            next_info = parse_next_time(task.get('next', '-'))
+            last_info = parse_last_run_time(task.get('last_run', '-'))
+            
+            # 判断是否是今天的任务
+            is_today_task = next_info['is_today'] or last_info['is_today']
+            
+            # 如果 Next/Last 都无值，根据 Status 判断
+            if not is_today_task:
+                if task.get('status') == 'idle':
+                    is_today_task = True  # 暂停的任务也显示
+                elif task.get('status') == 'error':
+                    is_today_task = True  # 失败的任务也显示
+                elif next_info['datetime'] is None and last_info['hours_ago'] is None:
+                    # 没有任何时间信息，视为新任务
+                    is_today_task = True
+            
+            # 判断任务状态
+            cron_status = task.get('status', 'unknown')
+            task_status = determine_task_status(next_info, last_info, cron_status)
+            
+            # 对于拆分后的任务，根据执行时间判断状态
+            if 'target_datetime' in task:
+                if task['is_past']:
+                    if cron_status == 'ok':
+                        task_status = 'completed'
+                    elif cron_status == 'error':
+                        task_status = 'blocked'
+                    else:
+                        task_status = 'completed'  # 已过时间且状态正常视为完成
+                else:
+                    task_status = 'pending'
+            
+            # 检查是否已存在
             existing = db.query(TaskRecord).filter(
                 TaskRecord.task_id == task_id
             ).first()
             
-            # 判断是否是今日执行的任务
-            last_run = cron_task['last_run']
-            is_today_executed = False
-            
-            if last_run and last_run != '-':
-                # 解析 last_run 时间
-                hours_match = re.match(r'(\d+)h ago', last_run)
-                if hours_match:
-                    hours = int(hours_match.group(1))
-                    # 如果小于 24 小时，说明是今日执行
-                    if hours < 24:
-                        is_today_executed = True
-                
-                minutes_match = re.match(r'(\d+)m ago', last_run)
-                if minutes_match:
-                    is_today_executed = True
-            
             if existing:
-                # 更新任务名称（确保使用带 agent 前缀的名称）
-                existing.task_name = cron_task['task_name']
-                
-                # 判断是否应该更新为今日任务
-                # 只有今日创建且今日执行的任务才标记为 completed
-                is_today_task = existing.created_at >= today_start_utc
-                
-                if is_today_task:
-                    # 今日创建的任务，根据实际执行状态更新
-                    if is_today_executed:
-                        # 今日执行的任务
-                        if cron_task['status'] == 'ok':
-                            existing.status = 'completed'  # 今日已执行
-                        elif cron_task['status'] == 'error':
-                            existing.status = 'blocked'  # 执行失败
-                        else:
-                            existing.status = 'pending'  # 待执行
-                    else:
-                        # 今日创建但未执行（或昨日执行）的任务
-                        # 检查任务是否应该今日执行
-                        if cron_task['status'] == 'ok' and not is_today_executed:
-                            # 状态是 ok 但不是今日执行的，说明是昨日执行
-                            # 对于周期性任务，应该根据当前时间判断
-                            existing.status = 'pending'  # 等待今日执行
-                        elif cron_task['status'] == 'error':
-                            existing.status = 'blocked'
-                        else:
-                            existing.status = 'pending'
-                    
-                    existing.updated_at = to_utc(datetime.now(CONFIG_TZ))
-                    existing.agent_id = owner
-                    print(f"  ✅ 更新今日 cron 任务：{cron_task['task_name']} ({existing.status}, agent={owner}, last={last_run})")
-                else:
-                    # 历史任务，不更新
-                    print(f"  ⏭️  跳过历史 cron 任务：{cron_task['task_name']} (agent={owner}, last={last_run})")
+                # 更新任务
+                existing.task_name = task['task_name']
+                existing.status = task_status
+                existing.updated_at = now_utc
+                existing.agent_id = owner
+                print(f"  ✅ 更新任务：{task['task_name']} ({task_status}, next={task.get('next', '-')}, last={task.get('last_run', '-')})")
             else:
                 # 新增任务
-                if cron_task['status'] == 'ok':
-                    status = 'completed'
-                elif cron_task['status'] == 'error':
-                    status = 'blocked'
-                else:
-                    status = 'pending'
-                
                 new_task = TaskRecord(
                     task_id=task_id,
-                    task_name=cron_task['task_name'],
+                    task_name=task['task_name'],
                     agent_id=owner,
                     task_type='cron',
-                    status=status,
-                    created_at=to_utc(datetime.now(CONFIG_TZ)),
+                    status=task_status,
+                    created_at=now_utc,
                 )
                 db.add(new_task)
-                print(f"  ✨ 新增 cron 任务：{cron_task['task_name']} ({status}, agent={owner})")
+                print(f"  ✨ 新增任务：{task['task_name']} ({task_status})")
         
         db.commit()
-        print(f"✅ Synced {len(cron_tasks)} cron tasks to database")
+        print(f"✅ Synced {len(all_tasks_to_sync)} cron tasks to database")
         
     except Exception as e:
         db.rollback()
