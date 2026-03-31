@@ -386,7 +386,7 @@ window.LOBSTER_CONFIG = {
 {
   "app": {
     "name": "OpenClaw 办公室",
-    "version": "1.0.0",
+    "version": "2.2.0",
     "description": "AI 团队工作空间 - 上帝视角的实时监控"
   },
   "server": {
