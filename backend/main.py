@@ -297,8 +297,8 @@ def get_agent_tasks(db: Session = Depends(get_db)):
             "priority": task.priority,
             "task_type": task_type,  # 任务类型
             "progress": progress,
-            "started_at": task.started_at.astimezone(BEIJING_TZ).isoformat() if task.started_at else None,
-            "completed_at": task.completed_at.astimezone(BEIJING_TZ).isoformat() if task.completed_at else None,
+            "started_at": to_local_time(task.started_at).isoformat() if task.started_at else None,
+            "completed_at": to_local_time(task.completed_at).isoformat() if task.completed_at else None,
             "executed_by": task.agent_id  # 实际执行者（main）
         }
         
@@ -755,7 +755,7 @@ def get_handovers(
                 "status": h.status,
                 "accepted_at": to_local_time(h.accepted_at).isoformat() if h.accepted_at else None,
                 "completed_at": to_local_time(h.completed_at).isoformat() if h.completed_at else None,
-                "created_at": h.created_at.astimezone(BEIJING_TZ).isoformat(),
+                "created_at": to_local_time(h.created_at).isoformat(),
                 "updated_at": to_local_time(h.updated_at).isoformat()
             }
             for h in handovers
@@ -789,10 +789,10 @@ def get_handover(handover_id: str, db: Session = Depends(get_db)):
             "context_data": json.loads(handover.context_data) if handover.context_data else {},
             "notes": handover.notes,
             "status": handover.status,
-            "accepted_at": handover.accepted_at.astimezone(BEIJING_TZ).isoformat() if handover.accepted_at else None,
-            "completed_at": handover.completed_at.astimezone(BEIJING_TZ).isoformat() if handover.completed_at else None,
+            "accepted_at": to_local_time(handover.accepted_at).isoformat() if handover.accepted_at else None,
+            "completed_at": to_local_time(handover.completed_at).isoformat() if handover.completed_at else None,
             "created_at": to_local_time(handover.created_at).isoformat() if handover.created_at else None,
-            "updated_at": handover.updated_at.astimezone(BEIJING_TZ).isoformat() if handover.updated_at else None
+            "updated_at": to_local_time(handover.updated_at).isoformat() if handover.updated_at else None
         }
     }
 
@@ -812,8 +812,8 @@ def accept_handover(
         raise HTTPException(status_code=404, detail="交接记录不存在")
     
     handover.status = "accepted"
-    handover.accepted_at = datetime.utcnow()
-    handover.updated_at = datetime.utcnow()
+    handover.accepted_at = get_current_utc()
+    handover.updated_at = get_current_utc()
     
     db.commit()
     
@@ -853,7 +853,7 @@ def reject_handover(
         raise HTTPException(status_code=404, detail="交接记录不存在")
     
     handover.status = "rejected"
-    handover.updated_at = datetime.utcnow()
+    handover.updated_at = get_current_utc()
     
     db.commit()
     
@@ -883,8 +883,8 @@ def complete_handover(
         raise HTTPException(status_code=404, detail="交接记录不存在")
     
     handover.status = "completed"
-    handover.completed_at = datetime.utcnow()
-    handover.updated_at = datetime.utcnow()
+    handover.completed_at = get_current_utc()
+    handover.updated_at = get_current_utc()
     
     db.commit()
     
@@ -1035,17 +1035,17 @@ def get_request_stats(
     from datetime import datetime, timedelta
     
     # 获取当前北京时间（UTC+8）
-    def get_beijing_now():
-        return datetime.utcnow() + timedelta(hours=8)
+    def get_local_now():
+        return datetime.now(CONFIG_TZ)
     
     if period == "daily":
         if not date:
-            date = get_beijing_now().strftime('%Y-%m-%d')
+            date = get_local_now().strftime('%Y-%m-%d')
         return get_hourly_stats(db, agent_id, date)
     
     elif period == "weekly":
         if not date:
-            date = get_beijing_now().strftime('%Y-%m-%d')
+            date = get_local_now().strftime('%Y-%m-%d')
         # 计算本周起止
         current = datetime.strptime(date, '%Y-%m-%d')
         start = current - timedelta(days=current.weekday())
@@ -1054,7 +1054,7 @@ def get_request_stats(
     
     elif period == "monthly":
         if not date:
-            date = get_beijing_now().strftime('%Y-%m-%d')
+            date = get_local_now().strftime('%Y-%m-%d')
         # 计算本月起止
         current = datetime.strptime(date, '%Y-%m-%d')
         start = current.replace(day=1)
@@ -1066,7 +1066,7 @@ def get_request_stats(
     
     elif period == "comparison":
         if not date:
-            date = get_beijing_now().strftime('%Y-%m-%d')
+            date = get_local_now().strftime('%Y-%m-%d')
         return get_agent_comparison(db, date)
     
     else:

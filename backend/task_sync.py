@@ -18,8 +18,7 @@ from typing import List, Dict, Optional
 from database import SessionLocal, TaskRecord
 from config import get_config
 
-# 北京时区
-BEIJING_TZ = timezone(timedelta(hours=8))
+
 
 # 获取配置
 cfg = get_config()
