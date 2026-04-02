@@ -20,6 +20,7 @@ Cron 任务状态判断逻辑：
         - 每小时/每 X 小时 -> 拆分为多个任务实例（今日剩余次数）
 """
 
+import os
 import subprocess
 import json
 import re
@@ -334,12 +335,14 @@ def get_cron_tasks():
         - status: 执行状态（ok/error/idle）
     """
     try:
+        print(f"DEBUG: os.environ['HOME'] = {os.environ.get('HOME')}")
         result = subprocess.run(
-            ['openclaw', 'cron', 'list'],
+            ['/bin/bash', '-c', 'HOME=/Users/alisa USER=alisa /Users/alisa/.local/bin/openclaw cron list'],
             capture_output=True,
             text=True,
             timeout=30
         )
+        print(f"DEBUG: returncode = {result.returncode}, stdout_lines = {len(result.stdout.split(chr(10)))}")
         
         if result.returncode != 0:
             print(f"Error running openclaw cron list: {result.stderr}")
@@ -465,6 +468,8 @@ def sync_cron_to_database():
     try:
         cron_tasks = get_cron_tasks()
         print(f"Found {len(cron_tasks)} cron tasks from openclaw")
+        if cron_tasks:
+            print(f"First task: {cron_tasks[0]}")
         
         # 解析所有任务（包括拆分的任务实例）
         all_tasks_to_sync = []
@@ -481,8 +486,6 @@ def sync_cron_to_database():
                 all_tasks_to_sync.append(cron_task)
         
         print(f"Total tasks to sync: {len(all_tasks_to_sync)}")
-        
-        now_utc = to_utc(datetime.now(CONFIG_TZ))
         
         for task in all_tasks_to_sync:
             task_id = f"cron-{task['cron_id']}"
@@ -521,27 +524,40 @@ def sync_cron_to_database():
                 else:
                     task_status = 'pending'
             
+            # 计算任务的计划执行时间（用于 created_at）
+            # 优先使用任务的计划执行时间，而不是当前同步时间
+            if 'target_datetime' in task:
+                # 拆分后的任务（如每2小时），使用目标时间
+                task_created_at = task['target_datetime'].astimezone(UTC).replace(tzinfo=None)
+            elif next_info['datetime'] is not None and next_info['is_today']:
+                # 有计划执行时间且是今天
+                task_created_at = next_info['datetime'].astimezone(UTC).replace(tzinfo=None)
+            else:
+                # 没有计划时间，使用当前 UTC 时间
+                task_created_at = datetime.utcnow()
+            
             # 检查是否已存在
             existing = db.query(TaskRecord).filter(
                 TaskRecord.task_id == task_id
             ).first()
             
             if existing:
-                # 更新任务
+                # 更新任务（使用计划执行时间作为 created_at）
                 existing.task_name = task['task_name']
                 existing.status = task_status
-                existing.updated_at = now_utc
+                existing.updated_at = datetime.utcnow()
+                existing.created_at = task_created_at  # 使用计划执行时间
                 existing.agent_id = owner
                 print(f"  ✅ 更新任务：{task['task_name']} ({task_status}, next={task.get('next', '-')}, last={task.get('last_run', '-')})")
             else:
-                # 新增任务
+                # 新增任务（使用计划执行时间作为 created_at）
                 new_task = TaskRecord(
                     task_id=task_id,
                     task_name=task['task_name'],
                     agent_id=owner,
                     task_type='cron',
                     status=task_status,
-                    created_at=now_utc,
+                    created_at=task_created_at,  # 使用计划执行时间
                 )
                 db.add(new_task)
                 print(f"  ✨ 新增任务：{task['task_name']} ({task_status})")

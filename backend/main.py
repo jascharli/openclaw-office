@@ -235,13 +235,8 @@ def get_agent_tasks(db: Session = Depends(get_db)):
             should_show = False
         
         # === 过滤规则 3: 高频任务（每 X 小时）===
-        # 只显示最近一次执行
-        hourly_match = re.search(r'每 (\d+) 小时', task_name)
-        if hourly_match:
-            interval = int(hourly_match.group(1))
-            # 只在整点时刻显示（如每 2 小时：0 点、2 点、4 点...）
-            if now.hour % interval != 0:
-                should_show = False
+        # 已删除：现在通过 created_at 正确过滤今日任务，不需要按当前小时过滤
+        # hourly_match = re.search(r'每 (\d+) 小时', task_name)
         
         # 每日 X 点的任务：今日全部显示（不管时间是否已过）
         

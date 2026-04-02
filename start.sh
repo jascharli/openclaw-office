@@ -35,7 +35,7 @@ fi
 echo "🚀 启动后端 API (端口 8000)..."
 cd backend
 if [ "$DAEMON_MODE" = true ]; then
-    nohup python3 -m uvicorn main:app --host 0.0.0.0 --port 8000 > ../backend.log 2>&1 &
+    nohup env HOME=/Users/alisa python3 -m uvicorn main:app --host 0.0.0.0 --port 8000 > ../backend.log 2>&1 &
 else
     python3 -m uvicorn main:app --host 0.0.0.0 --port 8000 &
 fi

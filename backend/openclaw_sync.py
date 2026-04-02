@@ -70,10 +70,25 @@ def analyze_session_messages(session_path: str, last_activity: datetime) -> Opti
         current_action = None
         subagent_actions = []
         
+        # 对话时长计算：记录第一条用户消息时间和最后一条用户消息时间
+        first_user_message_time = None
+        last_user_message_time = None
+        last_message_time = None
+        
         for line in recent_lines:
             try:
                 msg = json.loads(line)
                 msg_type = msg.get("type", "")
+                
+                # 记录消息时间（转换为 UTC datetime）
+                msg_timestamp = msg.get("timestamp", "")
+                if msg_timestamp:
+                    try:
+                        msg_dt = datetime.fromisoformat(msg_timestamp.replace('Z', '+00:00')).replace(tzinfo=None)
+                        if last_message_time is None or msg_dt > last_message_time:
+                            last_message_time = msg_dt
+                    except:
+                        pass
                 
                 if msg_type == "message":
                     role = msg.get("message", {}).get("role", "")
@@ -91,6 +106,20 @@ def analyze_session_messages(session_path: str, last_activity: datetime) -> Opti
                                     
                     elif role == "user":
                         user_count += 1
+                        
+                        # 记录第一条用户消息时间
+                        if first_user_message_time is None and msg_timestamp:
+                            try:
+                                first_user_message_time = datetime.fromisoformat(msg_timestamp.replace('Z', '+00:00')).replace(tzinfo=None)
+                            except:
+                                pass
+                        
+                        # 记录最后一条用户消息时间（用于计算对话时长）
+                        if msg_timestamp:
+                            try:
+                                last_user_message_time = datetime.fromisoformat(msg_timestamp.replace('Z', '+00:00')).replace(tzinfo=None)
+                            except:
+                                pass
                         
                         # 检测用户分配任务
                         for item in content_items:
@@ -174,7 +203,10 @@ def analyze_session_messages(session_path: str, last_activity: datetime) -> Opti
             'subagent_actions': subagent_actions,
             'token_used': token_used,
             'message_count': len(lines),
-            'is_recent': is_recent
+            'is_recent': is_recent,
+            'first_user_message_time': first_user_message_time,
+            'last_user_message_time': last_user_message_time,
+            'last_message_time': last_message_time
         }
     
     except Exception as e:
@@ -439,6 +471,15 @@ def get_openclaw_agents() -> List[Dict]:
                 last_activity=last_activity
             )
             
+            # 计算对话时长/未活动时间
+            if status == 'conversing' and session_analysis.get('last_user_message_time'):
+                # 对话区：计算最后一条用户消息到现在的时间
+                conversation_duration = int((now_beijing - session_analysis['last_user_message_time']).total_seconds())
+                elapsed_time = max(0, conversation_duration)
+            else:
+                # 其他状态：使用未活动时间，最大 24 小时
+                elapsed_time = min(active_minutes * 60, 86400)
+            
             agents.append({
                 "agent_id": agent_id,
                 "agent_name": agent_name,
@@ -446,7 +487,7 @@ def get_openclaw_agents() -> List[Dict]:
                 "task_id": f"task-{agent_id}" if task_name else None,
                 "task_name": task_name,
                 "progress": 0.5 if status == 'working' else (1.0 if status == 'idle' else 0.0),
-                "elapsed_time": min(active_minutes * 60, 86400),
+                "elapsed_time": elapsed_time,
                 "estimated_remaining": 0,
                 "token_used": session_analysis.get('token_used', 0),
                 "last_activity": last_activity.isoformat()
