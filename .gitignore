@@ -25,18 +25,8 @@ config.json
 *.log
 
 # 测试文件
-test/
 **/test_*.py
 pytest.ini
-
-# 文档文件
-docs/
-**/*.md
-!README.md
-!USAGE.md
-!LICENSE
-!API.md
-!DATABASE.md
 
 # 临时文件
 .DS_Store
@@ -45,5 +35,4 @@ docs/
 *~
 
 # 其他
-memory/
 cleanup.sh
