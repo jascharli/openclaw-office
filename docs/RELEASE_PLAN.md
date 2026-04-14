@@ -1,7 +1,7 @@
-# 龙虾办公室 - v2.2 发布计划
+# 龙虾办公室 - v2.3 发布计划
 
-**发布版本**: v2.2  
-**发布日期**: 2026-03-30  
+**发布版本**: v2.3  
+**发布日期**: 2026-04-14  
 **维护者**: dev-claw (CTO)
 
 ---
@@ -212,7 +212,7 @@ EOF
 git add .
 
 # 初始提交
-git commit -m "Initial commit: Lobster Office v2.2"
+git commit -m "Initial commit: Lobster Office v2.3"
 ```
 
 ### 第二步：创建 GitHub 仓库
@@ -240,8 +240,8 @@ git push -u origin main
 1. 访问 GitHub 仓库页面
 2. 点击 "Releases" → "Draft a new release"
 3. 填写信息:
-   - Tag version: `v2.2`
-   - Release title: `龙虾办公室 v2.2`
+   - Tag version: `v2.3`
+   - Release title: `龙虾办公室 v2.3`
    - 描述: 粘贴 Release 说明
 4. 点击 "Publish release"
 
@@ -250,7 +250,7 @@ git push -u origin main
 ## 📄 Release 说明模板
 
 ```markdown
-# 龙虾办公室 v2.2 发布 🦞
+# 龙虾办公室 v2.3 发布 🦞
 
 ## 🎉 新功能
 
@@ -321,7 +321,7 @@ cd lobster-office
 
 ## 📝 更新日志
 
-### v2.2
+### v2.3
 - 初始版本发布
 - 完整的核心功能
 - Docker 支持
@@ -337,7 +337,7 @@ MIT License
 
 ---
 
-**下载**: [Source code (zip)](https://github.com/你的用户名/lobster-office/archive/refs/tags/v2.2.zip)
+**下载**: [Source code (zip)](https://github.com/你的用户名/lobster-office/archive/refs/tags/v2.3.zip)
 ```
 
 ---

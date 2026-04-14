@@ -1,6 +1,6 @@
 # 🦞 龙虾办公室 (OpenClaw Office)
 
-**AI 团队管理系统 - v2.2**
+**AI 团队管理系统 - v2.3**
 
 [![GitHub release](https://img.shields.io/github/release/你的用户名/openclaw-office.svg)](https://github.com/你的用户名/openclaw-office/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -241,4 +241,5 @@ python -m http.server 5173
 
 | 版本 | 日期 | 说明 |
 |------|------|------|
+| v2.3 | 2026-04-14 | 健康检测与自动恢复功能 |
 | v2.2 | 2026-03-30 | 初始版本发布 |

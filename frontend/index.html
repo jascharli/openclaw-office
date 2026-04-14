@@ -8,7 +8,7 @@
   <meta http-equiv="Expires" content="0">
   <!-- CSP: 允许 Vue 3 使用 eval 和 API 连接，支持局域网访问 -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com; style-src 'self' 'unsafe-inline'; font-src 'self' https://unpkg.com; connect-src *;">
-  <title>🦞 龙虾办公室 - AI 团队工作空间 v2.2</title>
+  <title>🦞 龙虾办公室 - AI 团队工作空间 v2.3</title>
   <script src="config.js"></script>
     <script>
       // 检查配置是否加载
@@ -559,6 +559,7 @@
       width: 100%;
       display: flex;
       justify-content: center;
+      gap: 200px;
     }
 
     .config-btn-mobile {
@@ -2943,6 +2944,9 @@
 
           <!-- 配置按钮 -->
           <div class="config-btn-container-mobile">
+            <button @click="openHealthLogsDialog" class="config-btn-mobile">
+              📋 系统日志
+            </button>
             <button @click="openConfigDialog" class="config-btn-mobile">
               ⚙️ 配置设置
             </button>
@@ -3193,6 +3197,63 @@
             </div>
           </div>
         </div>
+
+        <!-- 系统日志对话框 -->
+        <div v-if="healthLogsDialog" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;" @click.self="healthLogsDialog = false">
+          <div style="background: white; border-radius: 16px; padding: 24px; max-width: 700px; width: 90%; max-height: 80vh; box-shadow: 0 20px 60px rgba(0,0,0,0.3); display: flex; flex-direction: column;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+              <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 20px;">📋</div>
+              <h3 style="font-size: 18px; font-weight: 700; color: #333;">系统日志</h3>
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; align-items: center;">
+              <select v-model="healthLogsFilter" @change="filterHealthLogs" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+                <option value="all">全部服务</option>
+                <option value="backend">后端服务</option>
+                <option value="frontend">前端服务</option>
+                <option value="openclaw">OpenClaw</option>
+                <option value="openclaw_cron">OpenClaw Cron</option>
+              </select>
+              <button @click="fetchHealthLogs" style="padding: 8px 16px; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px;">🔄 刷新</button>
+              <button @click="triggerHealthCheck" style="padding: 8px 16px; background: #f59e0b; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px;">⚡ 立即检测</button>
+            </div>
+            
+            <div style="flex: 1; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 8px; max-height: 400px;">
+              <div v-if="healthLogsLoading" style="padding: 20px; text-align: center; color: #666;">加载中...</div>
+              <div v-else-if="healthLogs.length === 0" style="padding: 20px; text-align: center; color: #666;">暂无日志记录</div>
+              <table v-else style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                <thead style="background: #f9fafb; position: sticky; top: 0;">
+                  <tr>
+                    <th style="padding: 10px; text-align: left; border-bottom: 1px solid #e5e7eb;">时间</th>
+                    <th style="padding: 10px; text-align: left; border-bottom: 1px solid #e5e7eb;">服务</th>
+                    <th style="padding: 10px; text-align: left; border-bottom: 1px solid #e5e7eb;">状态</th>
+                    <th style="padding: 10px; text-align: left; border-bottom: 1px solid #e5e7eb;">详情</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="log in healthLogs" :key="log.id" style="border-bottom: 1px solid #f3f4f6;">
+                    <td style="padding: 10px;">{{ log.created_at }}</td>
+                    <td style="padding: 10px;">{{ log.service_name }}</td>
+                    <td style="padding: 10px;">
+                      <span :style="{
+                        'background': log.status === 'healthy' ? '#d1fae5' : log.status === 'unhealthy' ? '#fee2e2' : log.status === 'restarted' ? '#fef3c7' : '#e5e7eb',
+                        'color': log.status === 'healthy' ? '#065f46' : log.status === 'unhealthy' ? '#991b1b' : log.status === 'restarted' ? '#92400e' : '#374151',
+                        'padding': '2px 8px',
+                        'border-radius': '4px',
+                        'font-size': '12px'
+                      }">{{ log.status }}</span>
+                    </td>
+                    <td style="padding: 10px; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" :title="log.message">{{ log.message }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 15px;">
+              <button @click="healthLogsDialog = false" style="padding: 10px 20px; background: #e5e7eb; color: #333; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">关闭</button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -3274,7 +3335,12 @@
             task_sync: 10,
             request_sync: 15,
             cron_sync: 90
-          }
+          },
+          // 系统日志相关
+          healthLogsDialog: false,
+          healthLogs: [],
+          healthLogsFilter: 'all',
+          healthLogsLoading: false,
         }
       },
       computed: {
@@ -4029,6 +4095,42 @@
             cron_sync: window.OPENCLAW_CONFIG?.refresh?.cron_sync || 90
           }
           this.configDialog = true
+        },
+        // 打开系统日志对话框
+        async openHealthLogsDialog() {
+          this.healthLogsDialog = true
+          await this.fetchHealthLogs()
+        },
+        // 获取系统日志
+        async fetchHealthLogs() {
+          this.healthLogsLoading = true
+          try {
+            const apiBase = window.OPENCLAW_CONFIG?.api_base || `${window.location.protocol}//${window.location.hostname}:8000`
+            const response = await fetch(`${apiBase}/api/v1/health/logs?hours=48&service=${this.healthLogsFilter}`)
+            const data = await response.json()
+            this.healthLogs = data.logs || []
+          } catch (e) {
+            console.error('获取健康日志失败:', e)
+            this.healthLogs = []
+          } finally {
+            this.healthLogsLoading = false
+          }
+        },
+        // 筛选系统日志
+        async filterHealthLogs() {
+          await this.fetchHealthLogs()
+        },
+        // 手动触发健康检测
+        async triggerHealthCheck() {
+          try {
+            const apiBase = window.OPENCLAW_CONFIG?.api_base || `${window.location.protocol}//${window.location.hostname}:8000`
+            await fetch(`${apiBase}/api/v1/health/check`, { method: 'POST' })
+            await this.fetchHealthLogs()
+            alert('健康检测已触发')
+          } catch (e) {
+            console.error('触发健康检测失败:', e)
+            alert('触发失败: ' + e.message)
+          }
         },
         // 验证前端配置输入（秒）
         validateConfigInput(event, field) {

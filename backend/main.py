@@ -17,7 +17,7 @@ from handover_sync import create_handover_context, get_agent_sessions
 from request_sync import sync_request_logs, get_hourly_stats, get_daily_stats, get_agent_comparison, identify_agent_from_session
 from websocket import websocket_endpoint, manager, broadcast_agent_update, broadcast_reminder
 from feishu_notify import send_reminder_notification, send_alert_notification
-from scheduler import start_reminder_scheduler, stop_reminder_scheduler, start_data_sync_scheduler, stop_data_sync_scheduler, stop_scheduler
+from scheduler import start_reminder_scheduler, stop_reminder_scheduler, start_data_sync_scheduler, stop_data_sync_scheduler, stop_scheduler, start_health_check_scheduler
 import asyncio
 
 app = FastAPI(
@@ -53,6 +53,25 @@ def root():
 def health_check():
     """健康检查端点"""
     return {"status": "healthy", "timestamp": to_local_time(datetime.now(UTC)).isoformat()}
+
+
+@app.get("/api/v1/health/logs")
+def get_health_logs(hours: int = 48, service: str = None):
+    """获取健康检测日志"""
+    from health_check import get_health_logs as fetch_health_logs
+    logs = fetch_health_logs(hours=hours, service=service)
+    return {"logs": logs, "total": len(logs)}
+
+
+@app.post("/api/v1/health/check")
+def trigger_health_check():
+    """手动触发健康检测"""
+    from health_check import perform_health_check
+    try:
+        result = perform_health_check()
+        return {"success": True, "results": result}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 
 @app.websocket("/ws")
@@ -913,6 +932,9 @@ async def startup_event():
     # 启动数据采集调度器（定时任务）
     start_data_sync_scheduler(get_db)
     print("⏰ 数据采集调度器已启动")
+    
+    # 启动健康检测调度器（定时任务）
+    start_health_check_scheduler()
     
     # 立即执行一次数据采集（冷启动）
     print("🔄 执行首次数据采集...")

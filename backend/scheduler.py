@@ -453,7 +453,89 @@ def stop_data_sync_scheduler():
     data_sync_scheduler.stop()
 
 
+# ==================== 健康检测调度器 ====================
+
+class HealthCheckScheduler:
+    """健康检测调度器 - 定时检测服务健康状态"""
+    
+    def __init__(self):
+        self.scheduler = AsyncIOScheduler()
+        self.running = False
+        self.config = {
+            "enabled": True,
+            "interval_hours": 3,
+            "failure_threshold": 2,
+            "auto_restart": True,
+            "log_retention_hours": 48
+        }
+    
+    def start(self):
+        """启动健康检测调度器"""
+        if not self.config["enabled"]:
+            print("⚠️ 健康检测功能已禁用")
+            return
+        
+        self.running = True
+        
+        self.scheduler.add_job(
+            func=self._health_check_job,
+            trigger=IntervalTrigger(hours=self.config["interval_hours"]),
+            id='health_check',
+            name='服务健康检测',
+            replace_existing=True
+        )
+        
+        self.scheduler.add_job(
+            func=self._cleanup_logs_job,
+            trigger=IntervalTrigger(hours=24),
+            id='cleanup_health_logs',
+            name='清理过期健康日志',
+            replace_existing=True
+        )
+        
+        self.scheduler.start()
+        print(f"⏰ 健康检测调度器已启动（每{self.config['interval_hours']}小时检测一次）")
+    
+    def stop(self):
+        """停止健康检测调度器"""
+        self.running = False
+        self.scheduler.shutdown(wait=False)
+        print("⏹️ 健康检测调度器已停止")
+    
+    def _health_check_job(self):
+        """执行健康检测"""
+        from health_check import perform_health_check
+        try:
+            result = perform_health_check()
+            print(f"✅ 健康检测完成: {result}")
+        except Exception as e:
+            print(f"❌ 健康检测失败: {e}")
+    
+    def _cleanup_logs_job(self):
+        """清理过期日志"""
+        from health_check import cleanup_old_logs
+        try:
+            deleted = cleanup_old_logs(self.config["log_retention_hours"])
+            print(f"🧹 清理了 {deleted} 条过期健康日志")
+        except Exception as e:
+            print(f"❌ 清理日志失败: {e}")
+
+
+health_check_scheduler = HealthCheckScheduler()
+
+
+def start_health_check_scheduler():
+    """启动健康检测调度器"""
+    health_check_scheduler.start()
+
+
+def stop_health_check_scheduler():
+    """停止健康检测调度器"""
+    health_check_scheduler.stop()
+
+
 def stop_scheduler():
     """停止所有调度器"""
     stop_reminder_scheduler()
     stop_data_sync_scheduler()
+    stop_health_check_scheduler()

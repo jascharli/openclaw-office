@@ -221,6 +221,18 @@ class RequestLog(Base):
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
 
 
+class HealthLog(Base):
+    """服务健康检测日志表"""
+    __tablename__ = "health_logs"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    service_name = Column(String(50), nullable=False, index=True)  # 服务名称：backend/frontend/openclaw
+    status = Column(String(20), nullable=False)  # 状态：healthy/unhealthy/restarted/error
+    message = Column(Text)  # 详细信息/错误原因
+    action = Column(String(50))  # 执行的操作：none/restart/notify
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+
+
 def init_db():
     """初始化数据库"""
     Base.metadata.create_all(bind=engine)

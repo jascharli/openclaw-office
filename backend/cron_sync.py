@@ -335,18 +335,35 @@ def get_cron_tasks():
         - status: 执行状态（ok/error/idle）
     """
     try:
+        # 打印环境变量信息
         print(f"DEBUG: os.environ['HOME'] = {os.environ.get('HOME')}")
+        print(f"DEBUG: os.environ['USER'] = {os.environ.get('USER')}")
+        print(f"DEBUG: os.environ['PATH'] = {os.environ.get('PATH', '')[:200]}")
+        
+        # 获取当前用户的主目录
+        import pwd
+        try:
+            current_user = pwd.getpwuid(os.getuid()).pw_name
+            print(f"DEBUG: 当前系统用户 = {current_user}")
+        except:
+            print(f"DEBUG: 无法获取系统用户")
+        
         result = subprocess.run(
-            ['/bin/bash', '-c', 'HOME=/Users/alisa USER=alisa /Users/alisa/.local/bin/openclaw cron list'],
+            ['openclaw', 'cron', 'list'],
             capture_output=True,
             text=True,
-            timeout=30
+            timeout=60,  # 增加超时时间到 60 秒
+            env=os.environ  # 显式传递当前环境变量
         )
-        print(f"DEBUG: returncode = {result.returncode}, stdout_lines = {len(result.stdout.split(chr(10)))}")
+        print(f"DEBUG: returncode = {result.returncode}")
+        print(f"DEBUG: stdout 前 500 字符 = {result.stdout[:500] if result.stdout else 'None'}")
+        if result.stderr:
+            print(f"DEBUG: stderr = {result.stderr[:500]}")
         
         if result.returncode != 0:
-            print(f"Error running openclaw cron list: {result.stderr}")
-            return []
+            print(f"⚠️  Error running openclaw cron list: {result.stderr}")
+            print(f"⚠️  将使用备用任务数据")
+            return get_fallback_cron_tasks()
         
         tasks = []
         lines = result.stdout.strip().split('\n')
@@ -446,11 +463,23 @@ def get_cron_tasks():
                 'status': status,
             })
         
+        # 如果没有任务，返回备用数据
+        if not tasks:
+            return get_fallback_cron_tasks()
+        
         return tasks
     
     except Exception as e:
         print(f"Error getting cron tasks: {e}")
-        return []
+        return get_fallback_cron_tasks()
+
+
+def get_fallback_cron_tasks():
+    """
+    当 OpenClaw Gateway 不可用时，返回空列表（不使用备用数据）
+    """
+    print("⚠️  OpenClaw Gateway 不可用，返回空任务列表")
+    return []
 
 
 def sync_cron_to_database():
