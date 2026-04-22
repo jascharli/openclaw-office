@@ -480,6 +480,22 @@ def get_token_stats(
     total_used = sum(r.total_tokens or 0 for r in results)
     by_agent = {r.agent_id: (r.total_tokens or 0) for r in results}
     
+    # 计算本月总消耗（用于返回）
+    month_start = now_local.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    month_start_utc = month_start.astimezone(UTC).replace(tzinfo=None)
+    if month_start.month == 12:
+        month_end_utc = month_start.replace(year=month_start.year+1, month=1, day=1).astimezone(UTC).replace(tzinfo=None)
+    else:
+        month_end_utc = month_start.replace(month=month_start.month+1, day=1).astimezone(UTC).replace(tzinfo=None)
+    
+    monthly_query = db.query(
+        func.sum(RequestLog.tokens_total).label('total_tokens')
+    ).filter(
+        RequestLog.created_at >= month_start_utc,
+        RequestLog.created_at < month_end_utc
+    )
+    monthly_total = (monthly_query.scalar() or 0)
+    
     # 预算（从配置读取）
     daily_budget = config.config.get('token_budget', {}).get('daily', 500000)
     monthly_budget = config.config.get('token_budget', {}).get('monthly', 10000000)
@@ -488,14 +504,121 @@ def get_token_stats(
         "daily": daily_budget,
         "monthly": monthly_budget,
         "remaining_daily": max(0, daily_budget - total_used),
-        "remaining_monthly": max(0, monthly_budget - total_used)
+        "remaining_monthly": max(0, monthly_budget - monthly_total)
     }
     
     return {
         "period": period,
         "total_used": total_used,
+        "monthly_total": monthly_total,
         "by_agent": [{"agent_id": k, "used": v} for k, v in by_agent.items()],
         "budget": budget
+    }
+
+
+@app.get("/api/v1/tokens/monthly-trend")
+def get_monthly_token_trend(
+    month: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """
+    获取本月每日 Token 使用趋势
+    - 按 provider 分组汇总
+    - 按日期分组展示每日用量
+    month: 月份（格式 YYYY-MM，默认当前月）
+    """
+    from sqlalchemy import func
+    from datetime import timedelta
+    from collections import defaultdict
+    
+    # 获取当前北京时间
+    now_local = datetime.now(CONFIG_TZ)
+    
+    # 解析月份，计算起止时间
+    if month:
+        # 解析传入的月份
+        try:
+            start_local = datetime.strptime(month + '-01', '%Y-%m-%d').replace(tzinfo=CONFIG_TZ)
+            # 计算下个月第一天
+            if start_local.month == 12:
+                end_local = start_local.replace(year=start_local.year+1, month=1, day=1)
+            else:
+                end_local = start_local.replace(month=start_local.month+1, day=1)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid month format. Use YYYY-MM")
+    else:
+        # 使用当前月份
+        start_local = now_local.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        if start_local.month == 12:
+            end_local = start_local.replace(year=start_local.year+1, month=1, day=1)
+        else:
+            end_local = start_local.replace(month=start_local.month+1, day=1)
+    
+    # 转换为 UTC 时间（不带时区）
+    start_utc = start_local.astimezone(UTC).replace(tzinfo=None)
+    end_utc = end_local.astimezone(UTC).replace(tzinfo=None)
+    
+    # 查询每日按服务商分组的 Token 数据
+    query = db.query(
+        RequestLog.created_at,
+        RequestLog.provider,
+        func.sum(RequestLog.tokens_total).label('total_tokens')
+    ).filter(
+        RequestLog.created_at >= start_utc,
+        RequestLog.created_at < end_utc,
+        RequestLog.provider.isnot(None),
+        RequestLog.provider != ''
+    ).group_by(
+        RequestLog.created_at,
+        RequestLog.provider
+    ).order_by(
+        RequestLog.created_at,
+        RequestLog.provider
+    ).all()
+    
+    # 按日期和服务商聚合数据
+    daily_data = defaultdict(lambda: defaultdict(int))
+    provider_totals = defaultdict(int)
+    
+    for row in query:
+        # 将 UTC 时间转换为北京时间日期
+        date_str = row.created_at.replace(tzinfo=UTC).astimezone(CONFIG_TZ).strftime('%Y-%m-%d')
+        provider = row.provider or 'unknown'
+        tokens = row.total_tokens or 0
+        
+        daily_data[date_str][provider] += tokens
+        provider_totals[provider] += tokens
+    
+    # 构建每日数组（包含所有日期，即使某日无数据）
+    daily = []
+    current_date = start_local
+    while current_date < end_local:
+        date_str = current_date.strftime('%Y-%m-%d')
+        day_providers = daily_data.get(date_str, {})
+        day_total = sum(day_providers.values())
+        
+        daily.append({
+            'date': date_str,
+            'tokens': day_total,
+            'by_provider': dict(day_providers) if day_providers else {}
+        })
+        
+        current_date += timedelta(days=1)
+    
+    # 构建服务商汇总
+    by_provider = [
+        {'provider': provider, 'tokens': tokens}
+        for provider, tokens in sorted(provider_totals.items(), key=lambda x: x[1], reverse=True)
+    ]
+    
+    # 计算总计
+    total_tokens = sum(provider_totals.values())
+    
+    return {
+        'month': start_local.strftime('%Y-%m'),
+        'total_tokens': total_tokens,
+        'by_provider': by_provider,
+        'daily': daily
     }
 
 

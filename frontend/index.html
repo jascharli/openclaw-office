@@ -2778,27 +2778,75 @@
               <h4 style="margin-bottom: 15px; color: #333; font-size: 1.1em;">📊 Token 使用统计</h4>
               <!-- PC端：横向排列的服务商卡片，每个只显示今日Token -->
               <div v-show="!isMobile" style="display: flex; flex-wrap: wrap; gap: 15px;">
-                <div v-for="provider in providerStats.providers" :key="provider.provider" 
+                <div v-for="provider in providerStatsWithMonthly" :key="provider.provider" 
                      style="flex: 1; min-width: 140px; max-width: 200px; background: white; border-radius: 10px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-top: 3px solid; text-align: center;"
                      :style="{ borderTopColor: getProviderColor(provider.provider) }">
                   <!-- 服务商名称 -->
                   <div style="font-weight: 600; color: #333; margin-bottom: 8px; font-size: 0.9em;">{{ provider.provider }}</div>
-                  <!-- 今日Token数值 -->
+                  <!-- 今日 Token 数值 -->
                   <div style="font-size: 1.4em; font-weight: 700; color: #10b981;">{{ provider.tokens_total?.toLocaleString() || '0' }}</div>
-                  <div style="font-size: 0.75em; color: #999; margin-top: 2px;">今日Token</div>
+                  <div style="font-size: 0.75em; color: #999; margin-top: 2px;">今日 Token</div>
+                  <!-- 本月 Token 数值 -->
+                  <div style="font-size: 1.2em; font-weight: 700; color: #f59e0b; margin-top: 8px;">{{ provider.monthly_tokens?.toLocaleString() || '0' }}</div>
+                  <div style="font-size: 0.7em; color: #999; margin-top: 2px;">本月 Token</div>
                 </div>
               </div>
               
               <!-- 移动端：网格展示 -->
               <div v-show="isMobile" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
-                <div v-for="provider in providerStats.providers" :key="provider.provider" 
+                <div v-for="provider in providerStatsWithMonthly" :key="provider.provider" 
                      style="background: white; border-radius: 10px; padding: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-top: 3px solid; text-align: center;"
                      :style="{ borderTopColor: getProviderColor(provider.provider) }">
                   <!-- 服务商名称 -->
                   <div style="font-weight: 600; color: #333; margin-bottom: 6px; font-size: 0.85em;">{{ provider.provider }}</div>
-                  <!-- 今日Token数值 -->
+                  <!-- 今日 Token 数值 -->
                   <div style="font-size: 1.2em; font-weight: 700; color: #10b981;">{{ provider.tokens_total?.toLocaleString() || '0' }}</div>
-                  <div style="font-size: 0.7em; color: #999; margin-top: 2px;">今日Token</div>
+                  <div style="font-size: 0.7em; color: #999; margin-top: 2px;">今日 Token</div>
+                  <!-- 本月 Token 数值 -->
+                  <div style="font-size: 1em; font-weight: 700; color: #f59e0b; margin-top: 6px;">{{ provider.monthly_tokens?.toLocaleString() || '0' }}</div>
+                  <div style="font-size: 0.65em; color: #999; margin-top: 2px;">本月 Token</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 每日 Token 使用趋势图 -->
+            <div style="margin-top: 25px;">
+              <h4 style="margin-bottom: 15px; color: #333; font-size: 1.1em;">📈 本月每日 Token 使用趋势</h4>
+              <div v-if="!monthlyTokenTrend.daily || monthlyTokenTrend.daily.length === 0" style="text-align: center; padding: 30px; color: #666;">
+                暂无月度数据
+              </div>
+              <div v-else style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+                <!-- 图表容器 -->
+                <div style="height: 300px; display: flex; align-items: flex-end; gap: 4px; padding: 10px 0;">
+                  <div v-for="(day, idx) in monthlyTokenTrend.daily" :key="idx" 
+                       style="flex: 1; display: flex; flex-direction: column; align-items: center; position: relative;"
+                       :title="'日期：' + day.date + '\n总 Token: ' + (day.tokens || 0).toLocaleString()">
+                    <!-- 堆叠柱状图 -->
+                    <div style="display: flex; flex-direction: column-reverse; width: 100%; height: 100%; justify-content: flex-end;">
+                      <div v-for="(tokens, provider) in day.by_provider" :key="provider"
+                           v-show="tokens > 0"
+                           :style="{
+                             height: (tokens / maxDailyTokens * 100) + '%',
+                             background: getProviderColor(provider),
+                             opacity: 0.8,
+                             transition: 'all 0.3s'
+                           }"
+                           style="width: 100%; min-height: 2px;">
+                      </div>
+                    </div>
+                    <!-- 日期标签 -->
+                    <div style="font-size: 0.65em; color: #999; margin-top: 4px; transform: rotate(-45deg); transform-origin: top left; white-space: nowrap;">
+                      {{ day.date.slice(5) }}
+                    </div>
+                  </div>
+                </div>
+                <!-- 图例 -->
+                <div style="margin-top: 15px; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; padding: 10px; background: #f8f9fa; border-radius: 8px;">
+                  <div v-for="provider in monthlyTokenTrend.by_provider" :key="provider.provider"
+                       style="display: flex; align-items: center; gap: 4px; font-size: 0.8em; color: #666;">
+                    <span :style="{ display: 'inline-block', width: '12px', height: '12px', background: getProviderColor(provider.provider), borderRadius: '2px' }"></span>
+                    <span>{{ provider.provider }}: {{ provider.tokens.toLocaleString() }}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -2919,15 +2967,21 @@
               <div class="token-stat-value" style="font-size: 1.5em; font-weight: bold; color: #667eea;">{{ tokenStats.total_used?.toLocaleString() || '0' }}</div>
             </div>
             <div class="token-stat-card" style="background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center;">
+              <div style="color: #999; font-size: 0.9em; margin-bottom: 8px;">本月 Token 总消耗</div>
+              <div class="token-stat-value" style="font-size: 1.5em; font-weight: bold; color: #f59e0b;">{{ tokenStats.monthly_total?.toLocaleString() || '0' }}</div>
+            </div>
+            <div class="token-stat-card" style="background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center;">
               <div style="color: #999; font-size: 0.9em; margin-bottom: 8px; display: flex; justify-content: center; align-items: center; gap: 4px;">
                 <span>Token 预算</span>
                 <button @click="openTokenBudgetEdit" style="background: none; border: none; color: #667eea; cursor: pointer; font-size: 0.8em; padding: 2px 6px; border-radius: 4px;" title="修改预算">✏️</button>
               </div>
-              <div class="token-stat-value" style="font-size: 1.5em; font-weight: bold; color: #10b981;">{{ (tokenStats.budget.daily || 500000).toLocaleString() }}</div>
+              <div class="token-stat-value" style="font-size: 1.2em; font-weight: bold; color: #10b981;">{{ (tokenStats.budget.daily || 500000).toLocaleString() }}/{{ (tokenStats.budget.monthly || 10000000).toLocaleString() }}</div>
+              <div style="font-size: 0.7em; color: #999; margin-top: 4px;">日/月</div>
             </div>
             <div class="token-stat-card" style="background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center;">
               <div style="color: #999; font-size: 0.9em; margin-bottom: 8px;">Token 使用率</div>
-              <div class="token-stat-value" style="font-size: 1.5em; font-weight: bold; color: #ef4444;">{{ tokenUsagePercent }}%</div>
+              <div class="token-stat-value" style="font-size: 1.2em; font-weight: bold; color: #ef4444;">{{ tokenUsagePercent }}% / {{ monthlyUsagePercent }}%</div>
+              <div style="font-size: 0.7em; color: #999; margin-top: 4px;">日/月</div>
             </div>
           </div>
         </div>
@@ -3292,6 +3346,13 @@
             providers: [],
             models: []
           },
+          // 月度 Token 趋势数据
+          monthlyTokenTrend: {
+            month: '',
+            total_tokens: 0,
+            by_provider: [],
+            daily: []
+          },
           // 任务移交相关
           selectedTask: null,
           handoverDialog: false,
@@ -3549,6 +3610,13 @@
           if (budget <= 0) return 0
           return Math.min(100, ((used / budget) * 100).toFixed(1))
         },
+        // 月度 Token 使用率
+        monthlyUsagePercent() {
+          const budget = this.tokenStats.budget.monthly || 10000000
+          const used = this.tokenStats.monthly_total || 0
+          if (budget <= 0) return 0
+          return Math.min(100, ((used / budget) * 100).toFixed(1))
+        },
         // 模型到服务商的映射
         modelToProvider() {
           return {
@@ -3627,6 +3695,30 @@
             'openclaw': '#64748b',     // 石板灰
             'unknown': '#9ca3af'       // 灰色
           }
+        },
+        // 合并本月数据到服务商统计
+        providerStatsWithMonthly() {
+          const providers = this.providerStats.providers || []
+          const monthlyByProvider = {}
+          
+          // 构建本月服务商映射
+          this.monthlyTokenTrend.by_provider?.forEach(item => {
+            monthlyByProvider[item.provider] = item.tokens
+          })
+          
+          // 合并数据
+          return providers.map(provider => ({
+            ...provider,
+            monthly_tokens: monthlyByProvider[provider.provider] || 0
+          }))
+        },
+        // 计算每日 Token 最大值（用于图表缩放）
+        maxDailyTokens() {
+          if (!this.monthlyTokenTrend.daily || this.monthlyTokenTrend.daily.length === 0) {
+            return 1
+          }
+          const max = Math.max(...this.monthlyTokenTrend.daily.map(day => day.tokens || 0))
+          return max > 0 ? max : 1
         }
       },
       methods: {
@@ -3790,6 +3882,22 @@
             const modelStatsData = await modelStatsRes.json()
             console.log('📡 模型统计响应数据:', modelStatsData)
             console.log('✅ 模型统计获取成功')
+            
+            // 获取月度 Token 趋势
+            console.log('📡 开始获取月度 Token 趋势...')
+            const monthlyTrendUrl = API.getApiUrl('/tokens/monthly-trend');
+            console.log('📡 月度趋势 URL:', monthlyTrendUrl)
+            const monthlyTrendRes = await fetch(monthlyTrendUrl)
+            console.log('📡 月度趋势响应状态:', monthlyTrendRes.status)
+            if (!monthlyTrendRes.ok) {
+              console.warn('⚠️ 月度趋势 API 错误，使用空数据:', monthlyTrendRes.status)
+              this.monthlyTokenTrend = { month: '', total_tokens: 0, by_provider: [], daily: [] }
+            } else {
+              const monthlyTrendData = await monthlyTrendRes.json()
+              console.log('📡 月度趋势响应数据:', monthlyTrendData)
+              console.log('✅ 月度趋势获取成功')
+              this.monthlyTokenTrend = monthlyTrendData
+            }
             
             // 合并数据到 providerStats，保持响应式
             console.log('🔄 开始合并数据...')
