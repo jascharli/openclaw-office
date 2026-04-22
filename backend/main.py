@@ -1200,6 +1200,7 @@ def get_model_stats(
     
     query = db.query(
         RequestLog.model_name.label('model'),
+        RequestLog.provider.label('provider'),
         func.count(RequestLog.id).label('count'),
         func.sum(RequestLog.tokens_total).label('tokens')
     ).filter(
@@ -1212,13 +1213,13 @@ def get_model_stats(
     if provider:
         query = query.filter(RequestLog.provider == provider)
     
-    models = query.group_by(RequestLog.model_name).all()
+    models = query.group_by(RequestLog.model_name, RequestLog.provider).all()
     
     return {
         'date': date,
         'provider': provider,
         'models': [
-            {'model': m.model, 'count': m.count, 'tokens': m.tokens or 0}
+            {'model': m.model, 'provider': m.provider or 'unknown', 'count': m.count, 'tokens': m.tokens or 0}
             for m in models
         ]
     }

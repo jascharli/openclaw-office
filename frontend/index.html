@@ -3477,7 +3477,8 @@
           
           const grouped = {}
           models.forEach(model => {
-            const provider = this.getProviderFromModel(model.model)
+            // 优先使用 API 返回的 provider 字段，而不是根据模型名称推断
+            const provider = model.provider || this.getProviderFromModel(model.model)
             if (!grouped[provider]) {
               grouped[provider] = []
             }
@@ -3582,7 +3583,7 @@
             'glm-4': 'zhipu',
             'glm-4v': 'zhipu',
             'glm-3-turbo': 'zhipu',
-            'glm-4.7': 'zhipu',
+            // 注意：glm-4.7 可能通过不同服务商调用（如 volcengine-plan），不在此处硬编码映射
             
             // MiniMax
             'MiniMax-M2.5': 'minimax',
