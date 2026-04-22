@@ -302,14 +302,20 @@ def determine_agent_status(
     # 数据库存储的 last_activity 是北京时间，不带时区标签
     now_beijing = datetime.now(BEIJING_TZ).replace(tzinfo=None)
     time_since_activity = (now_beijing - last_activity).total_seconds() / 60
-    
+
     if session_analysis:
         user_count = session_analysis.get('user_count', 0)
         assistant_count = session_analysis.get('assistant_count', 0)
-        
-        # 有对话交互且最近 20 分钟内（放宽到 20 分钟）
-        if user_count > 0 and assistant_count > 0 and time_since_activity < 20:
-            print(f"✅ [{agent_id}] 判定为 conversing - 最近对话（{time_since_activity:.1f}分钟前）")
+        last_user_msg_time = session_analysis.get('last_user_message_time')
+
+        # 计算距离最后用户消息的时间（用于判定对话是否还在进行）
+        time_since_last_user_msg = 0
+        if last_user_msg_time:
+            time_since_last_user_msg = (now_beijing - last_user_msg_time).total_seconds() / 60
+
+        # 有对话交互且最近 20 分钟内有用户消息（使用 last_user_message_time 判断）
+        if user_count > 0 and assistant_count > 0 and time_since_last_user_msg < 20:
+            print(f"✅ [{agent_id}] 判定为 conversing - 最后用户消息（{time_since_last_user_msg:.1f}分钟前）")
             return 'conversing', None
     
     # ==================== 2️⃣ working 判定 ====================

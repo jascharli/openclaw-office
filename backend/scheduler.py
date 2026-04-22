@@ -44,7 +44,7 @@ class ReminderScheduler:
             # 规则：Token 超预算督促
             "token_budget": {
                 "enabled": True,
-                "threshold_tokens": 100000,  # 单任务超 10 万 Token
+                "threshold_tokens": 10000000,  # 单任务超 1000 万 Token
             },
             # 规则：进度停滞督促
             "progress_stuck": {

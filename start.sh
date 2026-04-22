@@ -75,6 +75,15 @@ if [ "$DAEMON_MODE" = true ]; then
     echo "   日志文件: backend.log, frontend.log"
     echo "   停止服务: ./stop.sh"
     echo ""
+    # 在 launchd 模式下，保持主进程运行以便监控
+    if [ "$LAUNCHD_MODE" = "true" ]; then
+        echo "🔄 启动 launchd 监控模式..."
+        # 等待后端进程结束
+        wait $BACKEND_PID
+        EXIT_CODE=$?
+        echo "⚠️  后端进程已退出，退出码: $EXIT_CODE"
+        exit $EXIT_CODE
+    fi
 else
     echo "🛑 停止服务：kill $BACKEND_PID $FRONTEND_PID"
     echo "   或运行: ./stop.sh"

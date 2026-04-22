@@ -18,6 +18,7 @@ from request_sync import sync_request_logs, get_hourly_stats, get_daily_stats, g
 from websocket import websocket_endpoint, manager, broadcast_agent_update, broadcast_reminder
 from feishu_notify import send_reminder_notification, send_alert_notification
 from scheduler import start_reminder_scheduler, stop_reminder_scheduler, start_data_sync_scheduler, stop_data_sync_scheduler, stop_scheduler, start_health_check_scheduler
+from openclaw_sync import get_openclaw_agents
 import asyncio
 
 app = FastAPI(
@@ -91,12 +92,11 @@ async def websocket_router_with_id(websocket: WebSocket, client_id: str):
 @app.get("/api/v1/agents/status")
 def get_agents_status(db: Session = Depends(get_db)):
     """
-    获取所有 Agent 的实时状态（从数据库读取，由定时任务同步）
+    获取所有 Agent 的实时状态（直接调用 openclaw_sync 获取最新数据）
     返回三区域分类：idle(休闲区), conversing(对话区), working(办公区)
     """
-    # 直接从数据库读取（由定时任务负责同步）
-    agents = db.query(AgentStatus).all()
-    
+    agents = get_openclaw_agents()
+
     result = {
         "agents": [],
         "summary": {
@@ -106,31 +106,29 @@ def get_agents_status(db: Session = Depends(get_db)):
             "working": 0
         }
     }
-    
+
     for agent in agents:
         agent_data = {
-            "agent_id": agent.agent_id,
-            "agent_name": agent.agent_name,
-            "status": agent.status,
-            "task_id": agent.task_id,
-            "task_name": agent.task_name,
-            "progress": agent.progress,
-            "elapsed_time": agent.elapsed_time,
-            "estimated_remaining": agent.estimated_remaining,
-            "token_used": agent.token_used,
-            # 数据库存储的就是北京时间，直接返回
-            "last_activity": agent.last_activity.isoformat() + "+08:00" if agent.last_activity else None
+            "agent_id": agent["agent_id"],
+            "agent_name": agent["agent_name"],
+            "status": agent["status"],
+            "task_id": agent.get("task_id"),
+            "task_name": agent.get("task_name"),
+            "progress": agent.get("progress", 0.0),
+            "elapsed_time": agent.get("elapsed_time", 0),
+            "estimated_remaining": agent.get("estimated_remaining", 0),
+            "token_used": agent.get("token_used", 0),
+            "last_activity": agent.get("last_activity").isoformat() + "+08:00" if isinstance(agent.get("last_activity"), datetime) else (agent.get("last_activity") if agent.get("last_activity") else None)
         }
         result["agents"].append(agent_data)
-        
-        # 统计
-        if agent.status == "idle":
+
+        if agent["status"] == "idle":
             result["summary"]["idle"] += 1
-        elif agent.status == "conversing":
+        elif agent["status"] == "conversing":
             result["summary"]["conversing"] += 1
-        elif agent.status == "working":
+        elif agent["status"] == "working":
             result["summary"]["working"] += 1
-    
+
     return result
 
 
@@ -253,10 +251,7 @@ def get_agent_tasks(db: Session = Depends(get_db)):
         if monthly_match and now.day != int(monthly_match.group(1)):
             should_show = False
         
-        # === 过滤规则 3: 高频任务（每 X 小时）===
-        # 已删除：现在通过 created_at 正确过滤今日任务，不需要按当前小时过滤
-        # hourly_match = re.search(r'每 (\d+) 小时', task_name)
-        
+        # === 过滤规则 3: 每 X 小时任务全部显示（根据状态判断是否完成）===
         # 每日 X 点的任务：今日全部显示（不管时间是否已过）
         
         if should_show:

@@ -299,12 +299,14 @@ def generate_split_tasks(cron_task: dict, schedule_info: dict) -> list:
     # 获取当前时间所在的小时区间
     current_hour = now.hour
     
-    # 生成今日剩余的任务实例
+    # 生成今日剩余的任务实例（只生成当前时间之后的小时）
     for hour in range(0, 24, interval_hours):
-        # 计算这个小时是否已过
+        # 跳过已过的小时（但保留当前小时，用于显示"即将执行"的任务）
+        if hour < current_hour:
+            continue
+
         target_dt = now.replace(hour=hour, minute=0, second=0, microsecond=0)
-        
-        # 创建任务实例
+
         task_instance = {
             'cron_id': f"{cron_task['cron_id']}-{hour}",
             'task_name': f"{cron_task['task_name']} ({hour}:00)",
@@ -313,7 +315,7 @@ def generate_split_tasks(cron_task: dict, schedule_info: dict) -> list:
             'next_time': target_dt,
             'last_run': cron_task.get('last_run', '-'),
             'status': cron_task.get('status', 'unknown'),
-            'target_datetime': target_dt,  # 这个实例的执行时间
+            'target_datetime': target_dt,
             'is_past': target_dt < now,
         }
         tasks.append(task_instance)

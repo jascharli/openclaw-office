@@ -28,7 +28,7 @@ window.OPENCLAW_CONFIG = {
   // Token 预算配置
   token_budget: {
     daily: 500000,
-    monthly: 15000000
+    monthly: 10000000
   },
   
   // 验证配置
@@ -103,7 +103,7 @@ if (!window.OPENCLAW_CONFIG) {
     },
     token_budget: {
       daily: 500000,
-      monthly: 15000000
+      monthly: 10000000
     },
     validate: function() { return null; },
     getApiUrl: function(path) {
