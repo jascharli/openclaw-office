@@ -2286,9 +2286,9 @@
       display: flex;
       align-items: flex-end;
       justify-content: space-between;
-      height: 240px;
-      gap: 12px;
-      padding: 10px 5px 70px 5px;
+      height: 260px;
+      gap: 4px;
+      padding: 10px 5px 35px 5px;
       overflow-x: hidden;
     }
 
@@ -2399,18 +2399,14 @@
     }
 
     .pc-chart-label {
-      font-size: 0.8em;
+      font-size: 0.9em;
       color: #333;
       white-space: nowrap;
       position: absolute;
-      bottom: -45px;
+      bottom: -25px;
       text-align: center;
-      width: 100px;
+      width: 100%;
       font-weight: 700;
-      transform: rotate(-45deg);
-      transform-origin: top left;
-      margin-left: -25px;
-      line-height: 1.2;
     }
 
     .hourly-bar {
@@ -2714,7 +2710,7 @@
 
             <!-- 每小时请求量分组柱状图 -->
             <div class="hourly-chart">
-              <h4 style="margin-bottom: 15px; color: #333; font-size: 1.1em;">📊 每小时请求量</h4>
+              <h4 style="margin-bottom: 15px; color: #333; font-size: 1.1em;">📊 每小时请求量（按服务商分组）</h4>
 
               <!-- PC 端：纵向堆叠柱状图（X轴时间，Y轴请求数） -->
               <div class="pc-chart-container" v-show="!isMobile">
@@ -3522,7 +3518,7 @@
             
             result.push({
               hour: i,
-              displayHour: i + '-' + ((i + 1) % 24),
+              displayHour: i === 23 ? 24 : i + 1,
               total: Object.values(by_provider).reduce((sum, count) => sum + count, 0),
               by_provider
             })
