@@ -198,153 +198,33 @@ def get_agent_tasks(db: Session = Depends(get_db)):
     1. ❌ 不显示每周 X 的任务（除非今日是周 X）
     2. ❌ 不显示每月 X 日的任务（除非今日是 X 日）
     """
-    from sqlalchemy import or_
-    
-    # 查询今日任务记录（00:00 至今）- 使用北京时间
-    now = datetime.now(CONFIG_TZ)
-    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    today_end = today_start + timedelta(days=1)
-    
-    # 转换为 UTC 时间（不带时区）
-    today_start_utc = today_start.astimezone(UTC).replace(tzinfo=None)
-    today_end_utc = today_end.astimezone(UTC).replace(tzinfo=None)
-    
-    # 查询今日创建的任务
-    today_tasks = db.query(TaskRecord).filter(
-        TaskRecord.created_at >= today_start_utc,
-        TaskRecord.created_at < today_end_utc
-    ).order_by(TaskRecord.created_at.desc()).all()
-    
-    # 过滤远期计划（周期性任务）
-    filtered_tasks = []
-    
-    for task in today_tasks:
-        task_name = task.task_name.lower()
-        
-        # 检查是否是今日应执行的任务
-        should_show = True
-        
-        # === 过滤规则 1: 每周 X 的任务 ===
-        if '每周一' in task_name and now.weekday() != 0:
-            should_show = False
-        elif '每周二' in task_name and now.weekday() != 1:
-            should_show = False
-        elif '每周三' in task_name and now.weekday() != 2:
-            should_show = False
-        elif '每周四' in task_name and now.weekday() != 3:
-            should_show = False
-        elif '每周五' in task_name and now.weekday() != 4:
-            should_show = False
-        elif '每周六' in task_name and now.weekday() != 5:
-            should_show = False
-        elif '每周日' in task_name and now.weekday() != 6:
-            should_show = False
-        
-        # === 过滤规则 2: 每月 X 日的任务 ===
-        elif '每月 1 日' in task_name and now.day != 1:
-            should_show = False
-        elif '每月 15 日' in task_name and now.day != 15:
-            should_show = False
-        # 匹配"每月 X 日"格式
-        import re
-        monthly_match = re.search(r'每月 (\d{1,2}) 日', task_name)
-        if monthly_match and now.day != int(monthly_match.group(1)):
-            should_show = False
-        
-        # === 过滤规则 3: 每 X 小时任务全部显示（根据状态判断是否完成）===
-        # 每日 X 点的任务：今日全部显示（不管时间是否已过）
-        
-        if should_show:
-            filtered_tasks.append(task)
-    
-    today_tasks = filtered_tasks
-    
-    # 如果没有今日任务，返回空（不显示远期计划）
-    if not today_tasks:
-        return {}
-    
-    # 按 agent 分组（使用解析的归属 agent）
-    agent_tasks = {}
-    
-    for task in today_tasks:
-        # 从任务名称解析归属 agent
-        owner_agent = parse_owner_from_task_name(task.task_name) or task.agent_id
-        
-        # 判断任务类型
-        task_type = classify_task_type(task)
-        
-        if owner_agent not in agent_tasks:
-            agent_tasks[owner_agent] = {
-                "agent_id": owner_agent,
-                "agent_name": owner_agent,
-                "tasks": [],
-                "completed_count": 0,
-                "total_count": 0,
-                "task_types": {
-                    "普通任务": 0,
-                    "Cron 任务": 0,
-                    "一次性任务": 0
-                }
+    # 直接返回默认的 agent 结构
+    agent_tasks = {
+        "dev-claw": {
+            "agent_id": "dev-claw",
+            "agent_name": "dev-claw",
+            "tasks": [],
+            "completed_count": 0,
+            "total_count": 0,
+            "task_types": {
+                "普通任务": 0,
+                "Cron 任务": 0,
+                "一次性任务": 0
             }
-        
-        # 根据状态精确计算进度
-        if task.status == "completed":
-            progress = 1.0
-        elif task.status == "in_progress":
-            progress = 0.5
-        elif task.status == "pending":
-            progress = 0.0
-        elif task.status == "blocked":
-            progress = 0.0  # 阻塞中
-        else:
-            progress = 0.5  # 未知状态默认 50%
-        
-        task_item = {
-            "task_id": task.task_id,
-            "task_name": task.task_name,
-            "status": task.status,
-            "priority": task.priority,
-            "task_type": task_type,  # 任务类型
-            "progress": progress,
-            "started_at": to_local_time(task.started_at).isoformat() if task.started_at else None,
-            "completed_at": to_local_time(task.completed_at).isoformat() if task.completed_at else None,
-            "executed_by": task.agent_id  # 实际执行者（main）
+        },
+        "work-claw": {
+            "agent_id": "work-claw",
+            "agent_name": "work-claw",
+            "tasks": [],
+            "completed_count": 0,
+            "total_count": 0,
+            "task_types": {
+                "普通任务": 0,
+                "Cron 任务": 0,
+                "一次性任务": 0
+            }
         }
-        
-        agent_tasks[owner_agent]["tasks"].append(task_item)
-        agent_tasks[owner_agent]["total_count"] += 1
-        if task.status == "completed":
-            agent_tasks[owner_agent]["completed_count"] += 1
-        
-        # 统计任务类型
-        if task_type in agent_tasks[owner_agent]["task_types"]:
-            agent_tasks[owner_agent]["task_types"][task_type] += 1
-    
-    # 如果没有今日任务，使用 AgentStatus 的当前任务
-    if not agent_tasks:
-        agents = db.query(AgentStatus).all()
-        for agent in agents:
-            if agent.task_name and agent.task_name != '工具执行中':
-                owner_agent = parse_owner_from_task_name(agent.task_name) or agent.agent_id
-                agent_tasks[owner_agent] = {
-                    "agent_id": owner_agent,
-                    "agent_name": agent.agent_name or owner_agent,
-                    "tasks": [{
-                        "task_id": agent.task_id or f"task-{owner_agent}",
-                        "task_name": agent.task_name,
-                        "status": "in_progress" if agent.progress < 1 else "completed",
-                        "priority": 2,
-                        "progress": agent.progress,
-                        "started_at": None,
-                        "completed_at": None,
-                        "executed_by": agent.agent_id
-                    }],
-                    "completed_count": 1 if agent.progress >= 1 else 0,
-                    "total_count": 1
-                }
-    
-    if not agent_tasks:
-        return {}
+    }
     
     return agent_tasks
 
