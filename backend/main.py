@@ -198,7 +198,38 @@ def get_agent_tasks(db: Session = Depends(get_db)):
     1. ❌ 不显示每周 X 的任务（除非今日是周 X）
     2. ❌ 不显示每月 X 日的任务（除非今日是 X 日）
     """
-    # 直接返回默认的 agent 结构
+    from datetime import datetime, timedelta
+    
+    # 获取当前北京时间
+    now_local = datetime.now(CONFIG_TZ)
+    today_start = now_local.replace(hour=0, minute=0, second=0, microsecond=0)
+    today_end = today_start + timedelta(days=1)
+    
+    # 转换为 UTC 时间（不带时区）
+    today_start_utc = today_start.astimezone(UTC).replace(tzinfo=None)
+    today_end_utc = today_end.astimezone(UTC).replace(tzinfo=None)
+    
+    # 从数据库读取今日任务（简化查询，获取所有任务）
+    # 先获取所有任务，然后在Python中过滤
+    all_tasks = db.query(TaskRecord).all()
+    
+    # 过滤出今日任务
+    from datetime import date, datetime
+    today = date.today()
+    today_tasks = []
+    
+    for task in all_tasks:
+        if task.created_at:
+            task_date = task.created_at.date()
+            if task_date == today:
+                today_tasks.append(task)
+    
+    print(f"DEBUG: Today: {today}")
+    print(f"DEBUG: Found {len(today_tasks)} tasks")
+    for task in today_tasks:
+        print(f"DEBUG: Task: {task.task_name}, Agent: {task.agent_id}, Date: {task.created_at.date()}")
+    
+    # 初始化 agent 结构
     agent_tasks = {
         "dev-claw": {
             "agent_id": "dev-claw",
@@ -223,8 +254,66 @@ def get_agent_tasks(db: Session = Depends(get_db)):
                 "Cron 任务": 0,
                 "一次性任务": 0
             }
+        },
+        "main": {
+            "agent_id": "main",
+            "agent_name": "main",
+            "tasks": [],
+            "completed_count": 0,
+            "total_count": 0,
+            "task_types": {
+                "普通任务": 0,
+                "Cron 任务": 0,
+                "一次性任务": 0
+            }
         }
     }
+    
+    # 处理任务数据
+    for task in today_tasks:
+        # 过滤掉暂停的任务
+        if task.status == "paused":
+            continue
+            
+        agent_id = task.agent_id
+        if agent_id not in agent_tasks:
+            # 添加新的 agent
+            agent_tasks[agent_id] = {
+                "agent_id": agent_id,
+                "agent_name": agent_id,
+                "tasks": [],
+                "completed_count": 0,
+                "total_count": 0,
+                "task_types": {
+                    "普通任务": 0,
+                    "Cron 任务": 0,
+                    "一次性任务": 0
+                }
+            }
+        
+        # 分类任务类型
+        task_type = classify_task_type(task)
+        
+        # 构建任务数据
+        task_data = {
+            "task_id": task.task_id,
+            "task_name": task.task_name,
+            "status": task.status,
+            "priority": task.priority,
+            "created_at": to_local_time(task.created_at).isoformat() if task.created_at else None,
+            "started_at": to_local_time(task.started_at).isoformat() if task.started_at else None,
+            "completed_at": to_local_time(task.completed_at).isoformat() if task.completed_at else None,
+            "token_used": task.token_used or 0
+        }
+        
+        # 添加到 agent 的任务列表
+        agent_tasks[agent_id]["tasks"].append(task_data)
+        agent_tasks[agent_id]["total_count"] += 1
+        agent_tasks[agent_id]["task_types"][task_type] += 1
+        
+        # 统计完成的任务
+        if task.status == "completed":
+            agent_tasks[agent_id]["completed_count"] += 1
     
     return agent_tasks
 

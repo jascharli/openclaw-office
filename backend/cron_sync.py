@@ -531,9 +531,7 @@ def sync_cron_to_database():
             
             # 如果 Next/Last 都无值，根据 Status 判断
             if not is_today_task:
-                if task.get('status') == 'idle':
-                    is_today_task = True  # 暂停的任务也显示
-                elif task.get('status') == 'error':
+                if task.get('status') == 'error':
                     is_today_task = True  # 失败的任务也显示
                 elif next_info['datetime'] is None and last_info['hours_ago'] is None:
                     # 没有任何时间信息，视为新任务
